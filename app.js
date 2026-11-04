@@ -1,4 +1,4 @@
-/* PokéTracker V13 — catalogue FR/JP enrichi, données locales conservées */
+/* PokéTracker V14 — catalogue FR/JP enrichi, données locales conservées */
 const KEY='poketracker-v2';
 function readStore(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
 let db=readStore(KEY);if(!db||typeof db!=='object'||Array.isArray(db))db={};if(!Array.isArray(db.cards))db.cards=[];
@@ -36,13 +36,24 @@ function renderHome(){
  const startedSets=Object.keys(sets).filter(started);
  $('myCollections').innerHTML=startedSets.length?blocks.map(b=>{let entries=b.series.flat().filter(k=>started(k));return entries.length?`<article class="catalogue-group"><h3>${b.title}</h3><div class="catalogue-languages">${entries.map(languageCard).join('')}</div></article>`:''}).join(''):'';
  $('noCollections').hidden=startedSets.length>0;
- $('availableBlocks').innerHTML=blocks.map((b,i)=>{let remaining=b.series.map(group=>group.filter(k=>!started(k))).filter(g=>g.length);if(!remaining.length)return '';return `<article class="block-card"><div class="block-heading"><span class="eyebrow">COLLECTIONS</span><h3>${b.title}</h3><p>${b.description}</p></div><div class="catalogue-group-list">${remaining.map(group=>group.length===1?languageCard(group[0]):`<button class="series-entry" data-open-group="${group.join(',')}"><b>${sets[group[0]].title.replace('30 ans Pokémon','30e anniversaire')}</b><span>Choisir une langue <i>›</i></span></button>`).join('')}</div></article>`}).join('');
  document.querySelectorAll('[data-open-set]').forEach(b=>b.onclick=()=>openSet(b.dataset.openSet));
- document.querySelectorAll('[data-open-group]').forEach(b=>b.onclick=()=>openLanguageGroup(b.dataset.openGroup.split(',')));
 }
-function openLanguageGroup(group){$('landing').hidden=true;$('collection').hidden=true;$('languagePicker').hidden=false;$('languageTitle').textContent='30e anniversaire';$('languageOptions').innerHTML=group.map(languageCard).join('');document.querySelectorAll('[data-open-set]').forEach(b=>b.onclick=()=>openSet(b.dataset.openSet));window.scrollTo(0,0)}
-function openSet(k){current=k;$('landing').hidden=true;$('languagePicker').hidden=true;$('collection').hidden=false;$('add').hidden=false;$('search').value='';filter='all';document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('selected',b.dataset.filter==='all'));renderCollection();loadCatalog(false);window.scrollTo(0,0)}
-function goHome(){$('landing').hidden=false;$('languagePicker').hidden=true;$('collection').hidden=true;$('add').hidden=true;renderHome();window.scrollTo(0,0)}
+function showLanguageChoice(){
+ $('landing').hidden=true;$('collection').hidden=true;$('explorerResults').hidden=true;$('languagePicker').hidden=false;window.scrollTo(0,0);
+}
+function renderExplorer(lang){
+ const names=lang==='fr'?'COLLECTIONS FRANÇAISES':'JAPANESE COLLECTIONS';
+ $('languagePicker').hidden=true;$('explorerResults').hidden=false;
+ $('explorerLanguageLabel').textContent=lang==='fr'?'🇫🇷 FRANÇAIS':'🇯🇵 JAPONAIS';
+ $('explorerLanguageTitle').textContent=lang==='fr'?'Séries françaises':'Séries japonaises';
+ const groups=blocks.map(b=>{const entries=b.series.flat().filter(k=>sets[k].lang===lang&&!started(k));return entries.length?`<article class="block-card"><div class="block-heading"><span class="eyebrow">COLLECTIONS</span><h3>${b.title}</h3><p>${b.description}</p></div><div class="catalogue-group-list">${entries.map(k=>languageCard(k)).join('')}</div></article>`:''}).join('');
+ $('availableBlocks').innerHTML=groups||'<p class="muted">Toutes les séries de cette langue sont déjà commencées.</p>';
+ document.querySelectorAll('[data-open-set]').forEach(b=>b.onclick=()=>openSet(b.dataset.openSet));
+ window.scrollTo(0,0);
+}
+function openLanguageGroup(group){const lang=sets[group[0]]?.lang||'fr';renderExplorer(lang)}
+function openSet(k){current=k;$('landing').hidden=true;$('languagePicker').hidden=true;$('explorerResults').hidden=true;$('collection').hidden=false;$('add').hidden=false;$('search').value='';filter='all';document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('selected',b.dataset.filter==='all'));renderCollection();loadCatalog(false);window.scrollTo(0,0)}
+function goHome(){$('landing').hidden=false;$('languagePicker').hidden=true;$('explorerResults').hidden=true;$('collection').hidden=true;$('add').hidden=true;renderHome();window.scrollTo(0,0)}
 function renderCollection(){
  let a=collectionCards(),owned=a.filter(c=>c.owned),missing=a.filter(c=>!c.owned),pct=a.length?Math.round(owned.length/a.length*100):0,s=sets[current];
  $('setLabel').textContent=s.label;$('setTitle').textContent=s.title;$('setSubtitle').textContent=s.code;
@@ -57,7 +68,7 @@ function renderCollection(){
 function openForm(c){editing=c?.id||null;$('form').reset();$('dlgTitle').textContent=c?'Modifier la carte':'Ajouter une carte';if(c)Object.entries(c).forEach(([k,v])=>{let el=$('form').elements[k];if(el){if(el.type==='checkbox')el.checked=!!v;else el.value=v??''}});$('priceJPLabel').hidden=sets[current].lang!=='jp';$('dlg').showModal()}
 function closeForm(){$('dlg').close();editing=null}
 $('home').onclick=$('back').onclick=goHome;$('add').onclick=$('firstAdd').onclick=()=>openForm();$('close').onclick=$('cancel').onclick=closeForm;
-$('languageBack').onclick=goHome;
+$('languageBack').onclick=goHome;$('exploreCollections').onclick=showLanguageChoice;$('explorerBack').onclick=showLanguageChoice;document.querySelectorAll('[data-language-choice]').forEach(b=>b.onclick=()=>renderExplorer(b.dataset.languageChoice));
 $('form').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target),old=db.cards.find(x=>x.id===editing),c={...(old||{}),id:editing||crypto.randomUUID(),set:old?.set||current,name:String(f.get('name')||'').trim(),number:String(f.get('number')||'').trim(),image:String(f.get('image')||'').trim(),priceFR:f.get('priceFR')||'',priceJP:sets[current].lang==='jp'?(f.get('priceJP')||''):'',owned:f.has('owned'),notes:String(f.get('notes')||'').trim()};db.cards=editing?db.cards.map(x=>x.id===editing?c:x):[...db.cards,c];closeForm();save()};
 $('cards').onclick=e=>{let id=e.target.dataset.edit;if(id)openForm(db.cards.find(c=>c.id===id))};$('cards').onchange=e=>{let id=e.target.dataset.own;if(id){let c=db.cards.find(x=>String(x.id)===String(id));if(c){c.owned=e.target.checked;save()}}};
 document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('selected',x===b));renderCollection()});$('search').oninput=renderCollection;
