@@ -4,6 +4,23 @@
     "lang": "fr",
     "id": "me01",
     "displayCode": "MEG",
-    "displayName": "Méga-Évolution"
+    "displayName": "Méga-Évolution",
+    "expectedCards": 188
+  },
+  {
+    "key": "m1l-jp",
+    "lang": "ja",
+    "id": "M1L",
+    "displayCode": "M1L",
+    "displayName": "Méga-Brave",
+    "expectedCards": 92
+  },
+  {
+    "key": "m1s-jp",
+    "lang": "ja",
+    "id": "M1S",
+    "displayCode": "M1S",
+    "displayName": "Méga-Symphonia",
+    "expectedCards": 92
   }
 ]
