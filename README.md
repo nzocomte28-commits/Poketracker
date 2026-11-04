@@ -1,10 +1,18 @@
-# PokéTracker V15
+# PokéTracker V17
 
-Navigation corrigée :
-1. Accueil : **Mes séries** (uniquement les séries commencées) + bouton **Explorer les collections**.
-2. Explorer : choix obligatoire **Français** ou **Japonais**.
-3. Après le choix : affichage du bloc **Méga-Évolution** avec les séries de la langue choisie.
-4. Le 30e anniversaire est rangé dans le bloc Méga-Évolution, pas dans un bloc séparé.
-5. Une série commencée reste visible dans Mes séries et reste aussi accessible depuis Explorer.
+## Ce qui change
+- Suppression de l'ajout manuel de cartes et de la fenêtre de saisie.
+- L'accueil conserve « Mes séries » et le bouton « Explorer les collections ».
+- Les checklists sont alimentées par le catalogue généré automatiquement.
+- Le générateur récupère noms, numéros, raretés, catégories, types, PV, illustrateurs, variantes et images.
+- Les cartes de catégorie Énergie/Energy sont exclues ; les cartes Dresseur contenant le mot « Énergie » sont conservées.
+- Identifiants séparés : MEG français (`me01`), M1L japonais et M1S japonais.
 
-La clé de stockage `poketracker-v2` est conservée. Ne pas effacer les données Safari.
+## Important : catalogue pas encore préchargé dans ce ZIP
+`catalog-data.js` est encore vide au départ. Pour récupérer les cartes et images :
+1. Importer les fichiers dans le dépôt GitHub.
+2. Ouvrir Actions > « Générer le catalogue PokéTracker » > Run workflow.
+3. Vérifier le journal de l'action : le workflow échoue si une série ne peut pas être récupérée.
+4. Après le commit automatique, ouvrir le site avec `?v=17`.
+
+La clé localStorage `poketracker-v2` est conservée. Ne pas effacer les données Safari.

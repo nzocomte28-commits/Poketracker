@@ -47,16 +47,23 @@ try {
 let failures = [];
 for (const set of config) {
   try {
-    const details = await getJson(`${API}/${set.lang}/sets/${encodeURIComponent(set.id)}`);
-    if (!Array.isArray(details.cards) || details.cards.length === 0) {
-      throw new Error('Aucune carte renvoyée par TCGdex pour cet identifiant');
+    let details = null;
+    try { details = await getJson(`${API}/${set.lang}/sets/${encodeURIComponent(set.id)}`); } catch {}
+    if ((!details || !Array.isArray(details.cards) || !details.cards.length) && set.search) {
+      const norm = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const all = await getJson(`${API}/${set.lang}/sets`);
+      const hits = all.filter(x => norm(x.name).includes(norm(set.search)));
+      if (hits.length === 1) details = await getJson(`${API}/${set.lang}/sets/${encodeURIComponent(hits[0].id)}`);
+    }
+    if (!details || !Array.isArray(details.cards) || details.cards.length === 0) {
+      throw new Error('Aucune carte trouvée dans TCGdex (identifiant ou nom introuvable)');
     }
 
     const cards = [];
     await pool(details.cards, 5, async brief => {
       const full = await getJson(`${API}/${set.lang}/cards/${encodeURIComponent(brief.id)}`);
-      const category = String(full.category || '').toLowerCase();
-      if (category === 'energy') return; // ne supprime pas les cartes Dresseur « Énergie »
+      const category = String(full.category || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
+      if (category === 'energy' || category === 'energie') return; // ne supprime pas les cartes Dresseur « Énergie »
 
       let image = '';
       if (brief.image) {
@@ -113,8 +120,8 @@ for (const set of config) {
   }
 }
 
-await fs.writeFile('catalog-data.js', `window.CATALOG=${JSON.stringify(catalog)};\\n`);
+await fs.writeFile('catalog-data.js', `window.CATALOG=${JSON.stringify(catalog)};` + String.fromCharCode(10));
 if (failures.length) {
-  console.error('\\nCertaines séries n’ont pas été actualisées :\\n' + failures.join('\\n'));
-  process.exitCode = 1;
+  console.error(String.fromCharCode(10) + 'Certaines séries n’ont pas été actualisées :' + String.fromCharCode(10) + failures.join(String.fromCharCode(10)));
+  process.exitCode = 1; // les séries réussies restent enregistrées, mais le workflow signale les séries manquantes
 }

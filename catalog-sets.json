@@ -5,7 +5,8 @@
     "id": "me01",
     "displayCode": "MEG",
     "displayName": "Méga-Évolution",
-    "expectedCards": 188
+    "expectedCards": 188,
+    "search": "mega-evolution"
   },
   {
     "key": "m1l-jp",
@@ -13,7 +14,8 @@
     "id": "M1L",
     "displayCode": "M1L",
     "displayName": "Méga-Brave",
-    "expectedCards": 92
+    "expectedCards": 92,
+    "search": "メガブレイブ"
   },
   {
     "key": "m1s-jp",
@@ -21,6 +23,55 @@
     "id": "M1S",
     "displayCode": "M1S",
     "displayName": "Méga-Symphonia",
-    "expectedCards": 92
+    "expectedCards": 92,
+    "search": "メガシンフォニア"
+  },
+  {
+    "key": "me02",
+    "lang": "fr",
+    "id": "me02",
+    "displayCode": "ME02",
+    "displayName": "Flammes Fantasmagoriques",
+    "search": "flammes fantasmagoriques"
+  },
+  {
+    "key": "me025",
+    "lang": "fr",
+    "id": "me02.5",
+    "displayCode": "ME02.5",
+    "displayName": "Héros Transcendants",
+    "search": "heros transcendants"
+  },
+  {
+    "key": "me03",
+    "lang": "fr",
+    "id": "me03",
+    "displayCode": "ME03",
+    "displayName": "Équilibre Parfait",
+    "search": "equilibre parfait"
+  },
+  {
+    "key": "me04",
+    "lang": "fr",
+    "id": "me04",
+    "displayCode": "ME04",
+    "displayName": "Chaos Ascendant",
+    "search": "chaos ascendant"
+  },
+  {
+    "key": "me05",
+    "lang": "fr",
+    "id": "me05",
+    "displayCode": "ME05",
+    "displayName": "Nuit Noire",
+    "search": "nuit noire"
+  },
+  {
+    "key": "mep",
+    "lang": "fr",
+    "id": "mep",
+    "displayCode": "MEP",
+    "displayName": "Promos Méga-Évolution",
+    "search": "promos"
   }
 ]
