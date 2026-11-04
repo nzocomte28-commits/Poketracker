@@ -1,4 +1,4 @@
-/* PokéTracker V14 — catalogue FR/JP enrichi, données locales conservées */
+/* PokéTracker V15 — catalogue FR/JP enrichi, données locales conservées */
 const KEY='poketracker-v2';
 function readStore(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
 let db=readStore(KEY);if(!db||typeof db!=='object'||Array.isArray(db))db={};if(!Array.isArray(db.cards))db.cards=[];
@@ -21,7 +21,7 @@ const sets={
  'me05':{title:'Nuit Noire',label:'BLOC MÉGA-ÉVOLUTION · FRANÇAIS',code:'ME05 · édition française',flag:'🇫🇷',lang:'fr'},
  'mep':{title:'Promos Méga-Évolution',label:'PROMOS · FRANÇAIS',code:'Promos françaises',flag:'🇫🇷',lang:'fr'}
 };
-const blocks=[{title:'Bloc Méga-Évolution',description:'Les extensions françaises et japonaises du bloc.',series:[['meg-fr'],['me02'],['me025'],['me03'],['me04'],['me05'],['mep'],['m1l-jp'],['m1s-jp']]},{title:'30e anniversaire',description:'Les collections anniversaire, dans chaque langue.',series:[['30-fr','30-jp']]}];
+const blocks=[{title:'Bloc Méga-Évolution',description:'Toutes les séries françaises et japonaises de ce bloc.',series:[['meg-fr'],['me02'],['me025'],['me03'],['me04'],['me05'],['mep'],['m1l-jp'],['m1s-jp'],['30-fr'],['30-jp']]}];
 let current='meg-fr',filter='all',editing=null;
 const $=id=>document.getElementById(id);
 const eur=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n||0);
@@ -46,7 +46,7 @@ function renderExplorer(lang){
  $('languagePicker').hidden=true;$('explorerResults').hidden=false;
  $('explorerLanguageLabel').textContent=lang==='fr'?'🇫🇷 FRANÇAIS':'🇯🇵 JAPONAIS';
  $('explorerLanguageTitle').textContent=lang==='fr'?'Séries françaises':'Séries japonaises';
- const groups=blocks.map(b=>{const entries=b.series.flat().filter(k=>sets[k].lang===lang&&!started(k));return entries.length?`<article class="block-card"><div class="block-heading"><span class="eyebrow">COLLECTIONS</span><h3>${b.title}</h3><p>${b.description}</p></div><div class="catalogue-group-list">${entries.map(k=>languageCard(k)).join('')}</div></article>`:''}).join('');
+ const groups=blocks.map(b=>{const entries=b.series.flat().filter(k=>sets[k].lang===lang);return entries.length?`<article class="block-card"><div class="block-heading"><span class="eyebrow">BLOC</span><h3>${b.title}</h3><p>${b.description}</p></div><div class="catalogue-group-list">${entries.map(k=>languageCard(k)).join('')}</div></article>`:''}).join('');
  $('availableBlocks').innerHTML=groups||'<p class="muted">Toutes les séries de cette langue sont déjà commencées.</p>';
  document.querySelectorAll('[data-open-set]').forEach(b=>b.onclick=()=>openSet(b.dataset.openSet));
  window.scrollTo(0,0);
