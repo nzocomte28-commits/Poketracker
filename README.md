@@ -1,25 +1,11 @@
-# PokéTracker — première version
+# PokéTracker v2
 
-Application web progressive (PWA), pensée pour iPhone et ajoutable à l'écran d'accueil.
+Refonte PWA : accueil avec choix de série, pages dédiées, checklist Master Set, prix FR en EUR et JP en JPY, calcul des budgets.
 
-## Inclus
-- Deux catégories : 30th japonais et 30th français
-- Checklist personnelle : ajout, modification, suppression, possédée / non possédée
-- Prix saisi en yens, conversion en euros avec taux modifiable
-- Prix cible, notes, recherche, statistiques
-- Sauvegarde locale dans le navigateur
-- Mise en cache de l'interface pour une utilisation hors ligne après première visite
+## Installation
+Remplacer les fichiers du dépôt GitHub Pages par ceux de cette archive. Conserver le même dépôt et la branche main.
 
-## Installation sur iPhone
-1. Héberger le contenu de ce dossier sur un site HTTPS (par exemple GitHub Pages ou Netlify).
-2. Ouvrir l'adresse dans Safari sur l'iPhone.
-3. Appuyer sur Partager → Sur l'écran d'accueil → Ajouter.
+## Limites
+Les cartes restent stockées localement. Les prix sont manuels. Aucun catalogue n'est préchargé tant que les identifiants exacts des séries et les périmètres de promos/Collection Classique ne sont pas validés. Le bouton TCGdex recherche des séries candidates mais n'importe rien automatiquement. Supabase, comptes et historique des prix viendront ensuite.
 
-## Limites actuelles
-- Aucune liste officielle de cartes n'est préchargée : on doit d'abord valider la checklist exacte des éditions japonaises et françaises.
-- Les prix ne sont pas récupérés automatiquement. Le champ de prix est manuel dans cette version.
-- Le taux JPY/EUR est manuel. Une prochaine étape pourra connecter une source de change et des sources de prix autorisées, si leur accès technique le permet.
-- Les données sont stockées sur l'appareil et ne sont pas synchronisées entre plusieurs appareils.
-
-## Lancer en local
-Servir ce dossier via un serveur HTTP local. Ouvrir `index.html` directement ne suffit pas pour tester le service worker.
+API TCGdex : https://tcgdex.dev/fr/
