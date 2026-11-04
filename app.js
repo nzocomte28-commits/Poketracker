@@ -1,4 +1,4 @@
-/* PokéTracker V15 — catalogue FR/JP enrichi, données locales conservées */
+/* PokéTracker V18 — navigation corrigée, données locales conservées */
 const KEY='poketracker-v2';
 function readStore(k){try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}}
 let db=readStore(KEY);if(!db||typeof db!=='object'||Array.isArray(db))db={};if(!Array.isArray(db.cards))db.cards=[];
@@ -60,12 +60,34 @@ function renderCollection(){
  $('pct').textContent=pct+' %';$('owned').textContent=owned.length;$('missing').textContent=missing.length;$('bar').style.width=pct+'%';
  const price=(c,key)=>Number(c[key]||0);let value=owned.reduce((n,c)=>n+price(c,'priceFR'),0),remaining=missing.reduce((n,c)=>n+price(c,'priceFR'),0),valueJP=owned.reduce((n,c)=>n+price(c,'priceJP'),0),remainingJP=missing.reduce((n,c)=>n+price(c,'priceJP'),0);
  $('value').textContent=value?eur(value):'—';$('remain').textContent=remaining?eur(remaining):'—';$('valueJP').textContent=valueJP?jpy(valueJP):'—';$('remainJP').textContent=remainingJP?jpy(remainingJP):'—';
- $('valueJPWrap').hidden=s.lang!=='jp';$('remainJPWrap').hidden=s.lang!=='jp';$('valueWrap').firstChild.textContent=s.lang==='jp'?'Valeur possédée EUR':'Valeur possédée';$('remainWrap').firstChild.textContent=s.lang==='jp'?'Budget restant EUR':'Budget restant';$('priceJPLabel').hidden=s.lang!=='jp';
+ $('valueJPWrap').hidden=s.lang!=='jp';$('remainJPWrap').hidden=s.lang!=='jp';$('valueWrap').firstChild.textContent=s.lang==='jp'?'Valeur possédée EUR':'Valeur possédée';$('remainWrap').firstChild.textContent=s.lang==='jp'?'Budget restant EUR':'Budget restant';if($('priceJPLabel'))$('priceJPLabel').hidden=s.lang!=='jp';
  let q=$('search').value.toLowerCase(),shown=a.filter(c=>(filter==='all'||(filter==='owned'?c.owned:!c.owned))&&[c.name,c.number,c.notes,c.rarity].join(' ').toLowerCase().includes(q));
  $('cards').innerHTML=shown.map(c=>`<article class="card">${c.image?`<img loading="lazy" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="placeholder">✦</div>'}<div class="info"><b>${esc(c.name)}</b><div class="meta">${esc(c.number||'Numéro non renseigné')}${c.rarity?' · '+esc(c.rarity):''}${c.category?' · '+esc(c.category):''}${c.types?.length?' · '+esc(c.types.join(', ')):''}${c.illustrator?' · '+esc(c.illustrator):''}${c.variants&&Object.keys(c.variants).filter(k=>c.variants[k]).length?' · '+esc(Object.keys(c.variants).filter(k=>c.variants[k]).join(' / ')):''}</div><div class="prices">${c.priceFR?`<strong>${eur(+c.priceFR)}</strong>`:'Prix EUR —'}${s.lang==='jp'?' · '+(c.priceJP?`<strong>${jpy(+c.priceJP)}</strong>`:'Prix JPY —'):''}</div><label class="own"><input type="checkbox" data-own="${esc(c.id)}" ${c.owned?'checked':''}> Possédée</label></div></article>`).join('');
  $('empty').hidden=a.length>0;$('cards').hidden=!shown.length;if(a.length&&!shown.length)$('cards').innerHTML='<p class="meta">Aucun résultat.</p>';
 }
-function loadCatalog(manual){const list=(window.CATALOG||{})[sets[current].catalog||current];if(!list?.length){$('apiStatus').textContent=current==='meg-fr'?'Le catalogue français sera disponible après génération depuis GitHub Actions. Les autres listes japonaises seront ajoutées avec une source vérifiée.':'Cette checklist est prête. Le catalogue complet de cette série reste à intégrer ; tu peux déjà ajouter tes cartes manuellement.';return 0}
+function loadCatalog(manual){const list=(window.CATALOG||{})[sets[current].catalog||current];if(!list?.length){$('apiStatus').textContent=current==='meg-fr'?'Le catalogue français sera disponible après génération depuis GitHub Actions. Les autres listes japonaises seront ajoutées avec une source vérifiée.':'Le catalogue complet de cette série reste à intégrer. Aucune carte ne peut être ajoutée manuellement.';return 0}
  const existing=new Set(collectionCards().map(c=>String(c.number))),toAdd=list.filter(c=>!existing.has(String(c.number??c.n??'')));for(const c of toAdd)db.cards.push({id:crypto.randomUUID(),set:current,name:c.name,number:c.number??c.n??'',image:c.image??c.img??'',rarity:c.rarity??c.r??'',category:c.category||'',types:c.types||[],hp:c.hp||'',illustrator:c.illustrator||'',variants:c.variants||{},priceFR:'',priceJP:'',owned:false,notes:''});if(toAdd.length)save();$('apiStatus').textContent=`${list.length} cartes référencées · ${toAdd.length} ajoutée(s) à ta checklist. Les cartes déjà cochées sont conservées.`;return toAdd.length}
-$('checkApi').onclick=()=>loadCatalog(true);renderHome();
+// Événements de navigation et de checklist (délégation pour les cartes créées dynamiquement).
+$('exploreCollections').addEventListener('click',showLanguageChoice);
+$('languageBack').addEventListener('click',goHome);
+$('explorerBack').addEventListener('click',showLanguageChoice);
+$('home').addEventListener('click',goHome);
+$('back').addEventListener('click',goHome);
+document.querySelectorAll('[data-language-choice]').forEach(button=>button.addEventListener('click',()=>renderExplorer(button.dataset.languageChoice)));
+document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{
+ filter=button.dataset.filter;
+ document.querySelectorAll('[data-filter]').forEach(item=>item.classList.toggle('selected',item===button));
+ renderCollection();
+}));
+$('search').addEventListener('input',renderCollection);
+$('cards').addEventListener('change',event=>{
+ const input=event.target.closest('[data-own]');
+ if(!input)return;
+ const card=db.cards.find(item=>String(item.id)===input.dataset.own);
+ if(!card)return;
+ card.owned=input.checked;
+ save();
+});
+$('checkApi').addEventListener('click',()=>loadCatalog(true));
+renderHome();
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
