@@ -1,6 +1,6 @@
 const OLD='poketracker-v1',KEY='poketracker-v2',old=JSON.parse(localStorage.getItem(OLD)||'null');
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||{cards:(old?.cards||[]).map(c=>({...c,set:c.language,priceFR:c.priceFR??'',priceJP:c.priceJP??(c.language==='jp'?c.price:'')}))};
-let set='jp',filter='all',editing=null;
+if(!db||typeof db!=='object')db={};if(!Array.isArray(db.cards))db.cards=[];let set='jp',filter='all',editing=null;
 const $=x=>document.getElementById(x),sets={
  jp:['COLLECTION JAPONAISE','30th Anniversary','M6a · 30e anniversaire','ja','30th anniversary'],
  fr:['COLLECTION FRANÇAISE','30 ans Pokémon','30C · édition française','fr','30 ans']
