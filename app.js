@@ -57,8 +57,6 @@ let cur='meg-fr',curBlock='mega',filter='all';
 let activePage='landing',setReturnPage='blockSetsPage',setReturnScroll=0;
 function show(id){pages.forEach(p=>$(p).hidden=p!==id);activePage=id;
  $('navMenu').classList.toggle('nav-active',id==='landing');
- $('navSeries').classList.toggle('nav-active',['blocksPage','blockSetsPage','collection'].includes(id));
- $('navShelf').classList.toggle('nav-active',id==='collectionShelf');
  $('navProfile').classList.toggle('nav-active',id==='statsPage');
  window.scrollTo(0,0)}
 function tile(k){const s=sets[k],t=totalN(k),n=ownedN(k),p=t?Math.round(n/t*100):0;
