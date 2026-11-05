@@ -1,4 +1,0 @@
-Correctif ciblé : remplace uniquement v22-navigation.js dans GitHub par le fichier fourni.
-Il corrige le changement de page lors de l'ouverture d'une série depuis les blocs ou les classeurs.
-Ne touche pas à app.js, catalog-data.js, styles.css ni à la clé de sauvegarde poketracker-v2.
-Après le commit, recharge le site et teste Séries > Méga-Évolution > une extension.
