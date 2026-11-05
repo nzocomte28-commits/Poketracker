@@ -38,3 +38,32 @@ footer small{opacity:.7;font-size:11px}
 .cols{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:12px;color:#c7c7ce}
 .cols button{min-width:42px;min-height:40px;border-radius:10px;border:1px solid #33333d;background:#17171e;color:#fff;font:600 13px sans-serif}
 .cols button.selected{border-color:#ed263e;background:#3a1620}
+
+/* V28 : blocs et séries, thème sombre */
+.tone-lime{--tone:#7ed321}#blockSetsPage[data-tone=lime]{--tone:#7ed321}.tone-violet{--tone:#b04ad8}#blockSetsPage[data-tone=violet]{--tone:#b04ad8}.tone-pink{--tone:#ff4fa3}#blockSetsPage[data-tone=pink]{--tone:#ff4fa3}.tone-orange{--tone:#ffa83a}#blockSetsPage[data-tone=orange]{--tone:#ffa83a}.tone-red{--tone:#ff4455}#blockSetsPage[data-tone=red]{--tone:#ff4455}.tone-slate{--tone:#8b97a8}#blockSetsPage[data-tone=slate]{--tone:#8b97a8}.tone-gold{--tone:#e0b04a}#blockSetsPage[data-tone=gold]{--tone:#e0b04a}
+#blockSetsPage{background:linear-gradient(180deg,color-mix(in srgb,var(--tone,#333) 26%,transparent),transparent 260px)}
+.blocks-grid{grid-template-columns:1fr!important;gap:14px!important}
+.sets-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+.block-card,.set-card{position:relative;display:flex;flex-direction:column;padding:0;overflow:hidden;color:#fff;text-align:left;background:#14141b;border:1px solid #2b2b35;border-radius:20px;transition:transform .12s}
+.block-card:active,.set-card:active{transform:scale(.98)}
+.block-stage,.set-stage{display:grid;place-items:center;background:radial-gradient(ellipse at 50% 45%,color-mix(in srgb,var(--tone) 34%,#14141b) 0,#14141b 72%)}
+.block-stage{height:128px}.set-stage{height:92px}
+.block-logo,.set-logo,.hero-logo{object-fit:contain;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.85)) drop-shadow(0 3px 10px rgba(0,0,0,.6))}
+.block-logo{max-width:78%;max-height:80px}.set-logo{max-width:80%;max-height:62px}
+.hero-logo{display:block;max-width:78%;max-height:64px;margin:4px 0}
+.set-flag{font-size:30px}.block-name-big{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.block-foot,.set-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px 13px}
+.set-foot{padding:9px 11px 11px}
+.set-text{display:grid;gap:2px;min-width:0}.set-text b{font-size:14px;line-height:1.25}.set-text small{font-size:12px;color:#aeb0ba}
+.set-card .set-text b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ring{--p:0;flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--tone) calc(var(--p)*1%),#2b2b35 0)}
+.ring i{font-style:normal;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#14141b;font-size:11px;font-weight:700}
+.is-complete{border-color:var(--tone);box-shadow:0 0 0 1px var(--tone),0 0 22px color-mix(in srgb,var(--tone) 35%,transparent)}
+.chips{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.chips button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #33333d;background:#17171e;color:#fff;font:600 13px sans-serif}
+.chips button.selected{border-color:#ed263e;background:#3a1620}
+
+/* V29 : bascule Français / Japonais */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:14px 0;background:#14141b;border:1px solid #2b2b35;border-radius:14px}
+.seg button{min-height:44px;border:0;border-radius:10px;background:transparent;color:#aeb0ba;font:600 14px sans-serif}
+.seg button.selected{background:#2a1a20;color:#fff;box-shadow:inset 0 0 0 1px #ed263e}

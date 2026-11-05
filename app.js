@@ -1,4 +1,4 @@
-/* PokéTracker V26 — script unique. Sauvegarde : poketracker-v3 (migrée depuis poketracker-v2, l'ancienne clé n'est jamais supprimée). */
+/* PokéTracker V29 — script unique. Sauvegarde : poketracker-v3 (migrée depuis poketracker-v2, l'ancienne clé n'est jamais supprimée). */
 'use strict';
 const KEY='poketracker-v3',OLD='poketracker-v2',CAT=window.CATALOG||{};
 const $=id=>document.getElementById(id);
@@ -19,7 +19,7 @@ const sets={
  '30-fr':S('30 ans Pokémon','30E ANNIVERSAIRE · FRANÇAIS','30C · édition française','🇫🇷','fr'),'30-jp':S('30th Anniversary','30E ANNIVERSAIRE · JAPONAIS','M6a · édition japonaise','🇯🇵','jp')};
 const mega=Object.keys(sets),meta={};
 const T=(id,name,desc,tone,s=[])=>({id,name,desc,tone,sets:s});
-const blocks=[T('mega','Méga-Évolution','Les nouvelles aventures Méga','red',mega),T('sv','Écarlate et Violet','L’ère Écarlate et Violet','violet'),T('swsh','Épée et Bouclier','L’ère Épée et Bouclier','blue'),T('sm','Soleil et Lune','L’ère Soleil et Lune','orange'),T('xy','XY','L’ère XY','cyan'),T('bw','Noir et Blanc','L’ère Noir et Blanc','green'),T('older','Ères précédentes','Diamant et Perle, Platine et plus','gold')];
+const blocks=[T('mega','Méga-Évolution','Les nouvelles aventures Méga','lime',mega),T('sv','Écarlate et Violet','L’ère Écarlate et Violet','violet'),T('swsh','Épée et Bouclier','L’ère Épée et Bouclier','pink'),T('sm','Soleil et Lune','L’ère Soleil et Lune','orange'),T('xy','XY','L’ère XY','red'),T('bw','Noir et Blanc','L’ère Noir et Blanc','slate'),T('older','Ères précédentes','Diamant et Perle, Platine et plus','gold')];
 
 /* ---------- Données : seuls « possédée », prix et cartes à l'unité sont stockés ---------- */
 function migrate(){
@@ -43,17 +43,24 @@ const started=()=>Object.keys(sets).filter(k=>ownedN(k)>0);
 const SB={me:'mega',m:'mega',sv:'sv',swsh:'swsh',s:'swsh',sm:'sm',xy:'xy',bw:'bw'};
 const blockOf=k=>mega.includes(k)?'mega':(SB[String(meta[k]?.serie||'').toLowerCase()]||'older');
 const blockSets=b=>Object.keys(sets).filter(k=>blockOf(k)===b.id);
+const SL={};let langF=(()=>{try{return localStorage.getItem('poketracker-lang')}catch{return null}})()==='jp'?'jp':'fr';
+const toneOf=k=>(blocks.find(b=>b.id===blockOf(k))||{}).tone||'slate';
+const logoOf=b=>SL[b.id==='mega'?'me':b.id]||'';
+const imgTag=(u,c,alt='')=>u?`<img class="${c}" src="${esc(u)}.webp" alt="${esc(alt)}" loading="lazy" decoding="async" onerror="this.remove()">`:'';
+function chips(b){const all=blockSets(b),cnt=l=>all.filter(k=>sets[k].lang===l).length;let c=$('langChips');if(!c){c=document.createElement('div');c.id='langChips';c.className='seg';$('blockSetsGrid').before(c)}
+ c.innerHTML=[['fr','🇫🇷 Français · '+cnt('fr')],['jp','🇯🇵 Japonais · '+cnt('jp')]].map(([v,l])=>`<button data-lang="${v}" class="${langF===v?'selected':''}">${l}</button>`).join('')}
 
 /* ---------- Navigation ---------- */
 const pages=['landing','blocksPage','blockSetsPage','collectionShelf','pokedexPage','statsPage','collection'];
 let cur='meg-fr',curBlock='mega',filter='all';
 function show(id){pages.forEach(p=>$(p).hidden=p!==id);$('navMenu').classList.toggle('nav-active',id==='landing');window.scrollTo(0,0)}
 function tile(k){const s=sets[k],t=totalN(k),n=ownedN(k),p=t?Math.round(n/t*100):0;
- return `<button class="set-tile" data-set="${k}"><span class="set-art">${s.flag}</span><b>${s.title}</b><small>${s.code}</small>${t?`<div class="mini-progress"><i style="width:${p}%"></i></div><em>${n}/${t} cartes →</em>`:'<em>Catalogue à venir</em>'}</button>`}
+ return `<button class="set-card tone-${toneOf(k)}${t&&n>=t?' is-complete':''}" data-set="${k}"><span class="set-stage">${imgTag(meta[k]?.logo,'set-logo',s.title)||`<span class="set-flag">${s.flag}</span>`}</span><span class="set-foot"><span class="set-text"><b>${esc(s.title)}</b><small>${s.flag} ${t?n+' / '+t:'Bientôt'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}
 function renderHome(){const ks=started();$('myCollections').innerHTML=ks.map(tile).join('');$('noCollections').hidden=ks.length>0}
-function openBlocks(){$('blocksGrid').innerHTML=blocks.map(b=>`<button class="block-tile ${b.tone}" data-block="${b.id}"><span class="block-mark">✦</span><b>${b.name}</b><small>${b.desc}</small><i>${blockSets(b).length?blockSets(b).length+' séries':'Catalogue à venir'} →</i></button>`).join('');show('blocksPage')}
-function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;curBlock=id;$('blockEyebrow').textContent='BLOC · '+b.name;$('blockTitle').textContent=b.name;
- const ks=blockSets(b);$('blockSetsGrid').innerHTML=ks.length?ks.map(tile).join(''):'<p class="muted">Les extensions de cette ère seront ajoutées avec leurs données vérifiées.</p>';show('blockSetsPage')}
+function openBlocks(){$('blocksGrid').innerHTML=blocks.map(b=>{const ks=blockSets(b),t=ks.reduce((a,k)=>a+totalN(k),0),n=ks.reduce((a,k)=>a+ownedN(k),0),p=t?Math.round(n/t*100):0;
+ return `<button class="block-card tone-${b.tone}" data-block="${b.id}"><span class="block-stage">${imgTag(logoOf(b),'block-logo',b.name)||`<span class="block-name-big">${esc(b.name)}</span>`}</span><span class="block-foot"><span class="set-text"><b>${esc(b.name)}</b><small>${ks.length?ks.length+' séries · '+n.toLocaleString('fr-FR')+' / '+t.toLocaleString('fr-FR')+' cartes':'Catalogue à venir'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}).join('');show('blocksPage')}
+function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;curBlock=id;$('blockEyebrow').textContent='BLOC · '+b.name;$('blockTitle').innerHTML=imgTag(logoOf(b),'hero-logo',b.name)||esc(b.name);$('blockSetsPage').dataset.tone=b.tone;
+ const ks=blockSets(b).filter(k=>sets[k].lang===langF);chips(b);$('blockSetsGrid').innerHTML=ks.length?ks.map(tile).join(''):'<p class="muted">Aucune série dans cette langue pour le moment.</p>';show('blockSetsPage')}
 function openShelf(){const ks=started();$('shelfList').innerHTML=ks.map(tile).join('');$('emptyShelf').hidden=ks.length>0;show('collectionShelf')}
 async function ensure(k){if(CAT[k])return true;try{const r=await fetch('catalog/sets/'+k+'.json');if(!r.ok)throw 0;CAT[k]=await r.json();delete cache[k];return true}catch{return false}}
 async function openSet(k){cur=k;filter='all';$('search').value='';
@@ -131,10 +138,10 @@ applyCols();
 
 /* ---------- Événements ---------- */
 document.addEventListener('click',e=>{
- const t=e.target.closest('[data-block],[data-set],[data-detail],[data-add],[data-rm],[data-home]');if(!t)return;const d=t.dataset;
+ const t=e.target.closest('[data-block],[data-set],[data-detail],[data-add],[data-rm],[data-home],[data-lang]');if(!t)return;const d=t.dataset;
  if(d.block)openBlock(d.block);else if(d.set)openSet(d.set);else if(d.detail)detail(d.detail);else if(d.add)addSingle(d.add);
  else if(d.rm){db.singles=db.singles.filter(x=>x.id!==d.rm);save();renderSingles();stats()}
- else{show('landing');renderHome()}});
+ else if(d.lang!==undefined){langF=d.lang;try{localStorage.setItem('poketracker-lang',langF)}catch{}openBlock(curBlock)}else{show('landing');renderHome()}});
 $('tileSeries').onclick=openBlocks;$('tileCollection').onclick=openShelf;
 $('tilePokedex').onclick=()=>{renderSingles();show('pokedexPage')};$('tileStats').onclick=()=>{stats();show('statsPage')};
 $('navMenu').onclick=$('home').onclick=()=>{show('landing');renderHome()};
@@ -148,7 +155,8 @@ document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.da
 if(!read(KEY))save();
 navigator.storage?.persist?.().catch(()=>{});
 (async()=>{try{const r=await fetch('catalog/index.json');if(!r.ok)return;const x=await r.json();
- for(const e of x.sets||[]){meta[e.key]={serie:e.serie,count:e.count};if(sets[e.key])continue;
+ for(const s of x.series||[])if(s.logo)SL[s.id]=s.logo;
+ for(const e of x.sets||[]){meta[e.key]={serie:e.serie,count:e.count,logo:e.logo||`https://assets.tcgdex.net/${e.lang}/${e.serie}/${e.id}/logo`};if(sets[e.key])continue;
   const fr=e.lang!=='ja';sets[e.key]={title:e.name,label:'BLOC · '+String(e.serie).toUpperCase()+(fr?' · FRANÇAIS':' · JAPONAIS'),code:e.id+(fr?' · édition française':' · édition japonaise'),flag:fr?'🇫🇷':'🇯🇵',lang:fr?'fr':'jp'}}
  renderHome()}catch{}})();
 renderHome();show('landing');
