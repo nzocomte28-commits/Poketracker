@@ -1,4 +1,4 @@
-// PokéTracker V26 — catalogue complet (toutes les séries FR + JP) depuis TCGdex.
+// PokéTracker V38 — catalogue complet (toutes les séries FR + JP) depuis TCGdex.
 // Un fichier JSON par extension (catalog/sets/<clé>.json), un index et un fichier de recherche.
 // Les images ne sont PAS copiées : elles sont chargées depuis assets.tcgdex.net.
 // Incrémental : une extension déjà générée n'est pas retéléchargée (relancer le workflow complète le reste).
@@ -13,7 +13,7 @@ const keyOf = (lang, id) => LEGACY[lang + ':' + id] || id.toLowerCase().replace(
 async function get(url, tries = 4) {
   for (let i = 0; i < tries; i++) {
     try {
-      const r = await fetch(url, {headers: {'user-agent': 'PokeTracker/26'}});
+      const r = await fetch(url, {headers: {'user-agent': 'PokeTracker/38'}});
       if (r.ok) return await r.json();
       if (r.status === 404) return null;
     } catch {}
@@ -27,12 +27,13 @@ async function pool(items, limit, task) {
 }
 
 await fs.mkdir('catalog/sets', {recursive: true});
-const index = [], search = [], failed = [];
+const index = [], search = [], failed = [], sinfo = {};
 
 for (const lang of LANGS) {
   const series = await get(`${API}/${lang}/series`) || [];
   for (const s of series) {
     const serie = await get(`${API}/${lang}/series/${encodeURIComponent(s.id)}`);
+    if (lang === 'fr' && !sinfo[s.id]) sinfo[s.id] = {id: s.id, name: s.name, logo: s.logo || serie?.logo || ''};
     if (String(s.id).toLowerCase() === 'tcgp') continue; // Pokémon TCG Pocket : hors périmètre
     for (const b of serie?.sets || []) {
       const key = keyOf(lang, b.id), file = `catalog/sets/${key}.json`;
@@ -65,7 +66,7 @@ for (const lang of LANGS) {
         }
       }
       if (!cards) { failed.push(`${lang}/${b.id}`); continue; }
-      index.push({key, lang, serie: s.id, id: b.id, name: b.name, count: cards.length});
+      index.push({key, lang, serie: s.id, id: b.id, name: b.name, count: cards.length, logo: b.logo || ''});
       for (const c of cards) search.push([key, c.number, c.name]);
       console.log(`✔ ${key} (${cards.length})`);
     }
@@ -73,7 +74,7 @@ for (const lang of LANGS) {
 }
 
 if (!index.length) { console.error('Aucune extension récupérée.'); process.exit(1); }
-await fs.writeFile('catalog/index.json', JSON.stringify({generated: new Date().toISOString(), sets: index}));
+await fs.writeFile('catalog/index.json', JSON.stringify({generated: new Date().toISOString(), series: Object.values(sinfo), sets: index}));
 await fs.writeFile('catalog/search.json', JSON.stringify(search));
 console.log(`${index.length} extensions, ${search.length} cartes.`);
 if (failed.length) console.log(`À relancer (non récupérées) : ${failed.join(', ')}`);
