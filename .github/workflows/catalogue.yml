@@ -2,9 +2,10 @@ name: Générer le catalogue PokéTracker
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1'
   push:
     paths:
-      - 'catalog-sets.json'
       - 'scripts/**'
       - '.github/workflows/catalogue.yml'
 
@@ -14,22 +15,20 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 340
     steps:
-      - name: Récupérer le dépôt
-        uses: actions/checkout@v4
-
-      - name: Installer Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Générer les cartes
+      - name: Générer le catalogue (incrémental)
         run: node scripts/build-catalog.mjs
-
       - name: Enregistrer le catalogue
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add catalog-data.js catalog/
-          git diff --cached --quiet || git commit -m "Génération du catalogue Pokémon"
+          git add catalog/index.json catalog/search.json catalog/sets
+          git diff --cached --quiet || git commit -m "Mise à jour du catalogue Pokémon"
+          git pull --rebase -q || true
           git push
