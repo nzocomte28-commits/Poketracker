@@ -296,3 +296,19 @@ body.pixel-world #tilePokedex .tile-metric-sub{display:none!important;}
 body.pixel-world #tilePokedex .tile-copy>small{max-width:100%!important;}
 body.pixel-world #singleCardDialog .field{display:flex;flex-direction:column;gap:6px;margin:12px 0;font-weight:700;}
 body.pixel-world #singleCardDialog .field input{width:100%;min-height:42px;padding:9px 12px;border:1px solid #8acbb0;border-radius:10px;background:#f3fff7;color:#173b38;font-size:16px;}
+
+/* PokéTracker V38 — images d'accueil décalées à droite (sans toucher la flèche), fiches et prix */
+body.pixel-world .home-tile .tile-art-series{width:26%!important;height:40%!important;left:49%!important}
+body.pixel-world .home-tile .tile-art-pokedex{width:31%!important;height:46%!important;left:45%!important}
+body.pixel-world .home-tile .tile-art-collection{width:23%!important;height:43%!important;left:50%!important}
+.set-codebig{font:800 22px ui-monospace,Menlo,monospace;letter-spacing:.5px;color:#fff;text-shadow:0 2px 8px #000a;padding:0 8px;text-align:center;overflow-wrap:anywhere}
+.hero-name{font-size:24px;font-weight:800}
+.pricebox{margin:12px 0;padding:12px;border-radius:14px;background:#0f2f2c;border:1px solid #2f6f62;display:grid;gap:8px;color:#e8fff6}
+.pricebox h3{margin:0;font-size:13px}.pricebox .muted{color:#b9dcd2}
+.price-main strong{font-size:26px;font-weight:800}.price-main small{margin-left:8px;opacity:.8}
+.price-chg{display:flex;gap:14px;font-size:13px;flex-wrap:wrap}.up{color:#4be08f}.down{color:#ff7b7b}
+.spark{width:100%;height:56px;color:#7ee7c4}
+.pricebar{display:grid;gap:6px;margin-top:12px}.cloudbox{display:grid;gap:10px;margin:8px 0 18px}
+.fiche-link{display:inline-block;margin-top:10px;text-decoration:none}
+body.pixel-world #cardDialog .field{display:flex;flex-direction:column;gap:6px;margin:10px 0;font-weight:700}
+body.pixel-world #cardDialog .field input{width:100%;min-height:42px;padding:9px 12px;border:1px solid #8acbb0;border-radius:10px;background:#f3fff7;color:#173b38;font-size:16px}

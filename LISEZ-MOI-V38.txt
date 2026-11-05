@@ -1,0 +1,5 @@
+POKETRACKER V38
+
+Fichiers modifiés ou nouveaux : index.html, app.js, styles-pixel.css, sw.js, config.js, SUPABASE.txt, supabase/schema.sql.
+Ne supprime pas le dossier catalog. Après envoi : Actions > « Générer le catalogue » > Run workflow
+(récupère les logos de blocs/séries manquants et le 30th Celebration japonais s'il est publié par TCGdex).

@@ -1,4 +1,4 @@
-/* PokéTracker V30 — catalogue dynamique, conversion JPY/EUR et statistiques bilingues.
+/* PokéTracker V38 — prix Cardmarket, fiches complètes, synchronisation Supabase, noms anglais pour le japonais.
    Sauvegarde conservée : poketracker-v3. */
 'use strict';
 const KEY='poketracker-v3',OLD='poketracker-v2',CAT=window.CATALOG||{};
@@ -16,8 +16,8 @@ const sets={
  'me025':S('Héros Transcendants',FR,'ME02.5 · édition française','🇫🇷','fr'),'me03':S('Équilibre Parfait',FR,'ME03 · édition française','🇫🇷','fr'),
  'me04':S('Chaos Ascendant',FR,'ME04 · édition française','🇫🇷','fr'),'me05':S('Nuit Noire',FR,'ME05 · édition française','🇫🇷','fr'),
  'mep':S('Promos Méga-Évolution','PROMOS · FRANÇAIS','Promos françaises','🇫🇷','fr'),
- 'm1l-jp':S('Méga-Brave',JP,'M1L · édition japonaise','🇯🇵','jp'),'m1s-jp':S('Méga-Symphonia',JP,'M1S · édition japonaise','🇯🇵','jp'),
- '30-fr':S('30 ans Pokémon','30E ANNIVERSAIRE · FRANÇAIS','30C · édition française','🇫🇷','fr'),'30-jp':S('30th Anniversary','30E ANNIVERSAIRE · JAPONAIS','M6a · édition japonaise','🇯🇵','jp')};
+ 'm1l-jp':S('Mega Brave',JP,'M1L · édition japonaise','🇯🇵','jp'),'m1s-jp':S('Mega Symphonia',JP,'M1S · édition japonaise','🇯🇵','jp'),
+ '30-fr':S('30 ans Pokémon','30E ANNIVERSAIRE · FRANÇAIS','30C · édition française','🇫🇷','fr'),'30-jp':S('30th Celebration','30E ANNIVERSAIRE · JAPONAIS','M6a · édition japonaise','🇯🇵','jp')};
 const mega=Object.keys(sets),meta={};
 const T=(id,name,desc,tone,s=[])=>({id,name,desc,tone,sets:s});
 const blocks=[T('mega','Méga-Évolution','Les nouvelles aventures Méga','lime',mega),T('sv','Écarlate et Violet','L’ère Écarlate et Violet','violet'),T('swsh','Épée et Bouclier','L’ère Épée et Bouclier','pink'),T('sm','Soleil et Lune','L’ère Soleil et Lune','orange'),T('xy','XY','L’ère XY','red'),T('bw','Noir et Blanc','L’ère Noir et Blanc','slate'),T('older','Ères précédentes','Diamant et Perle, Platine et plus','gold')];
@@ -32,7 +32,7 @@ function migrate(){
   if(Array.isArray(o.singles))d.singles=o.singles}
  return d}
 let db=read(KEY)||migrate();db={owned:{},prices:{},singles:[],...db};
-function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch{alert('Sauvegarde impossible : stockage plein ou bloqué par le navigateur. Exporte ta collection depuis Statistiques.')}}
+function save(push=true){if(push)db._t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(db))}catch{alert('Sauvegarde impossible : stockage plein ou bloqué par le navigateur. Exporte ta collection depuis Statistiques.')}if(push)pushSoon()}
 const cache={};
 const cardsOf=k=>cache[k]||(cache[k]=(CAT[k]||[]).map(c=>({...c,key:k+':'+(c.number??''),number:String(c.number??'')})));
 const isOwned=c=>!!db.owned[c.key];
@@ -46,8 +46,11 @@ const blockOf=k=>mega.includes(k)?'mega':(SB[String(meta[k]?.serie||'').toLowerC
 const blockSets=b=>Object.keys(sets).filter(k=>blockOf(k)===b.id);
 const SL={};let langF=(()=>{try{return localStorage.getItem('poketracker-lang')}catch{return null}})()==='jp'?'jp':'fr';
 const toneOf=k=>(blocks.find(b=>b.id===blockOf(k))||{}).tone||'slate';
-const logoOf=b=>SL[b.id==='mega'?'me':b.id]||'';
-const imgTag=(u,c,alt='')=>u?`<img class="${c}" src="${esc(u)}.webp" alt="${esc(alt)}" loading="lazy" decoding="async" onerror="this.remove()">`:'';
+const BLOCK_BASE={mega:'meg-fr',sv:'sv01',swsh:'swsh1',sm:'sm1',xy:'xy1',bw:'bw1',older:'base1'};
+const logoOf=b=>meta[BLOCK_BASE[b.id]]?.logo||SL[b.id==='mega'?'me':b.id]||'';
+const codeOf=k=>meta[k]?.id||String(sets[k].code).split(' ·')[0];
+const imgTag=(u,c,alt='',fb='',fbc='set-codebig')=>u?`<img class="${c}" src="${esc(u)}.webp" alt="${esc(alt)}" loading="lazy" decoding="async" data-fb="${esc(fb)}" data-fbc="${fbc}">`:'';
+addEventListener('error',e=>{const i=e.target;if(i&&i.tagName==='IMG'&&i.dataset.fbc){const s=document.createElement('span');s.className=i.dataset.fbc;s.textContent=i.dataset.fb||'';i.replaceWith(s)}},true);
 function chips(b){const all=blockSets(b),cnt=l=>all.filter(k=>sets[k].lang===l).length;let c=$('langChips');if(!c){c=document.createElement('div');c.id='langChips';c.className='seg';$('blockSetsGrid').before(c)}
  c.innerHTML=[['fr','🇫🇷 Français · '+cnt('fr')],['jp','🇯🇵 Japonais · '+cnt('jp')]].map(([v,l])=>`<button data-lang="${v}" class="${langF===v?'selected':''}">${l}</button>`).join('')}
 
@@ -62,14 +65,14 @@ function show(id){pages.forEach(p=>$(p).hidden=p!==id);activePage=id;
  $('navProfile').classList.toggle('nav-active',id==='statsPage');
  window.scrollTo(0,0)}
 function tile(k){const s=sets[k],t=totalN(k),n=ownedN(k),p=t?Math.round(n/t*100):0;
- return `<button class="set-card tone-${toneOf(k)}${t&&n>=t?' is-complete':''}" data-set="${k}"><span class="set-stage">${imgTag(meta[k]?.logo,'set-logo',s.title)||`<span class="set-flag">${s.flag}</span>`}</span><span class="set-foot"><span class="set-text"><b>${esc(s.title)}</b><small>${s.flag} ${t?n+' / '+t:'Bientôt'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}
+ return `<button class="set-card tone-${toneOf(k)}${t&&n>=t?' is-complete':''}" data-set="${k}"><span class="set-stage">${imgTag(meta[k]?.logo,'set-logo',s.title,codeOf(k))||`<span class="set-codebig">${esc(codeOf(k))}</span>`}</span><span class="set-foot"><span class="set-text"><b>${esc(s.title)}</b><small>${s.flag} ${t?n+' / '+t:'Bientôt'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}
 function renderHome(){const ks=started();$('myCollections').innerHTML=ks.map(tile).join('');$('noCollections').hidden=ks.length>0;
  const total=Object.values(meta).reduce((n,x)=>n+(Number(x.count)||0),0)||Object.values(CAT).reduce((n,x)=>n+(Array.isArray(x)?x.length:0),0);
  $('pokedexOwnedCount').textContent=db.singles.length.toLocaleString('fr-FR');
 }
 function openBlocks(){$('blocksGrid').innerHTML=blocks.map(b=>{const ks=blockSets(b),t=ks.reduce((a,k)=>a+totalN(k),0),n=ks.reduce((a,k)=>a+ownedN(k),0),p=t?Math.round(n/t*100):0;
- return `<button class="block-card tone-${b.tone}" data-block="${b.id}"><span class="block-stage">${imgTag(logoOf(b),'block-logo',b.name)||`<span class="block-name-big">${esc(b.name)}</span>`}</span><span class="block-foot"><span class="set-text"><b>${esc(b.name)}</b><small>${ks.length?ks.length+' séries · '+n.toLocaleString('fr-FR')+' / '+t.toLocaleString('fr-FR')+' cartes':'Catalogue à venir'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}).join('');show('blocksPage')}
-function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;curBlock=id;$('blockEyebrow').textContent='BLOC · '+b.name;$('blockTitle').innerHTML=imgTag(logoOf(b),'hero-logo',b.name)||esc(b.name);$('blockSetsPage').dataset.tone=b.tone;
+ return `<button class="block-card tone-${b.tone}" data-block="${b.id}"><span class="block-stage">${imgTag(logoOf(b),'block-logo',b.name,b.name,'block-name-big')||`<span class="block-name-big">${esc(b.name)}</span>`}</span><span class="block-foot"><span class="set-text"><b>${esc(b.name)}</b><small>${ks.length?ks.length+' séries · '+n.toLocaleString('fr-FR')+' / '+t.toLocaleString('fr-FR')+' cartes':'Catalogue à venir'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}).join('');show('blocksPage')}
+function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;curBlock=id;$('blockEyebrow').textContent='BLOC · '+b.name;$('blockTitle').innerHTML=imgTag(logoOf(b),'hero-logo',b.name,b.name,'hero-name')||esc(b.name);$('blockSetsPage').dataset.tone=b.tone;
  const ks=blockSets(b).filter(k=>sets[k].lang===langF);chips(b);$('blockSetsGrid').innerHTML=ks.length?ks.map(tile).join(''):'<p class="muted">Aucune série dans cette langue pour le moment.</p>';show('blockSetsPage')}
 function openShelf(){const ks=started();$('shelfList').innerHTML=ks.map(tile).join('');$('emptyShelf').hidden=ks.length>0;show('collectionShelf')}
 const ensureJobs={};
@@ -90,7 +93,7 @@ async function openSet(k){setReturnPage=activePage==='collectionShelf'?'collecti
 function render(){
  const s=sets[cur],all=cardsOf(cur),q=norm($('search').value),r=$('rarityFilter').value;
  const shown=all.filter(c=>(filter==='all'||(filter==='owned')===isOwned(c))&&(!r||c.rarity===r)&&norm([c.name,c.number,c.rarity,c.category].join(' ')).includes(q));
- let v=0,rem=0,vj=0,rj=0;for(const c of all){const p=price(c);if(isOwned(c)){v+=p.fr||0;vj+=p.jp||0}else{rem+=p.fr||0;rj+=p.jp||0}}
+ let v=0,rem=0,vj=0,rj=0;for(const c of all){const p=price(c),x=priceOf(c.key);if(isOwned(c)){v+=x;vj+=p.jp||0}else{rem+=x;rj+=p.jp||0}}
  const n=all.filter(isOwned).length,pc=all.length?Math.round(n/all.length*100):0;
  $('setLabel').textContent=s.label;$('setTitle').textContent=s.title;$('setSubtitle').textContent=s.code;
  $('pct').textContent=pc+' %';$('owned').textContent=n;$('missing').textContent=all.length-n;$('bar').style.width=pc+'%';
@@ -105,12 +108,13 @@ function detail(key){
  const c=cardsOf(cur).find(x=>x.key===key);if(!c)return;const s=sets[cur],p=price(c);
  let d=$('cardDialog');if(!d){d=document.createElement('dialog');d.id='cardDialog';d.className='v23-dialog';document.body.appendChild(d)}
  const f=(k,l,v)=>`<label class="field">${l}<input type="number" inputmode="decimal" min="0" step="any" data-p="${k}" value="${v||''}" placeholder="—"></label>`;
- d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE</b><button data-close aria-label="Fermer">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc(s.title)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd></dl><label class="v23-own-toggle"><input id="v23Own" type="checkbox" ${isOwned(c)?'checked':''}> Je possède cette carte</label><div class="fields">${f('fr','Prix observé (€)',p.fr)}${s.lang==='jp'?f('jp','Prix observé (¥)',p.jp)+`<small class="muted" id="jpEuroEstimate">Équivalent : ${p.jp?jpyEUR(p.jp):'—'}</small>`:''}${f('t','Prix cible (€)',p.t)}</div></div></div>`;
+ const vr=Object.keys(c.variants||{}).filter(x=>c.variants[x]===true).join(', ');
+ d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE</b><button data-close aria-label="Fermer">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc(s.title)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd>${vr?`<dt>Variantes</dt><dd>${esc(vr)}</dd>`:''}</dl>${priceBlock(key)}<label class="v23-own-toggle"><input id="v23Own" type="checkbox" ${isOwned(c)?'checked':''}> Je possède cette carte</label><div class="fields">${f('fr','Mon prix observé (€)',p.fr)}${s.lang==='jp'?f('jp','Prix observé (¥)',p.jp)+`<small class="muted" id="jpEuroEstimate">Équivalent : ${p.jp?jpyEUR(p.jp):'—'}</small>`:''}${f('t','Prix cible (€)',p.t)}</div>${s.lang==='fr'?`<a class="btn fiche-link" target="_blank" rel="noopener" href="https://www.cardmarket.com/fr/Pokemon/Products/Singles?searchString=${encodeURIComponent(c.name)}">Voir sur Cardmarket</a>`:''}</div></div>`;
  d.onchange=e=>{const t=e.target;
   if(t.id==='v23Own'){t.checked?db.owned[key]=1:delete db.owned[key]}
   else if(t.dataset.p){const o=db.prices[key]=db.prices[key]||{};o[t.dataset.p]=Math.max(0,parseFloat(String(t.value).replace(',','.'))||0);if(t.dataset.p==='jp'&&$('jpEuroEstimate'))$('jpEuroEstimate').textContent='Équivalent : '+(o.jp?jpyEUR(o.jp):'—')}
   save();render();renderHome()};
- d.querySelector('[data-close]').onclick=()=>d.close();d.showModal()}
+ d.querySelector('[data-close]').onclick=()=>d.close();d.showModal();fillPrice(key)}
 
 /* ---------- Pokédex / recherche ---------- */
 let SX=null;
@@ -142,18 +146,18 @@ async function singleDetail(key){
  const c=cardsOf(k).find(x=>x.number===n);if(!c)return;
  let d=$('singleCardDialog');if(!d){d=document.createElement('dialog');d.id='singleCardDialog';d.className='v23-dialog';document.body.appendChild(d)}
  const owned=db.singles.some(x=>x.id===key),p=db.prices[key]||{};
- d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE · POKÉDEX</b><button data-close aria-label="Retour au Pokédex">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc(sets[k]?.title||k)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd><dt>Évolution</dt><dd>${esc((Array.isArray(c.evolveFrom)?c.evolveFrom:[c.evolveFrom].filter(Boolean)).join(', ')||'—')}</dd></dl><label class="field">Prix de ma carte (€)<input type="number" inputmode="decimal" min="0" step="0.01" id="singleCardPrice" value="${p.fr||''}" placeholder="Saisir un prix"></label><p class="muted">Tu peux renseigner ici le prix estimé ou la valeur à laquelle tu l’as achetée.</p><button class="btn" data-dialog-add="${esc(key)}" ${owned?'disabled':''}>${owned?'Déjà dans mon Pokédex':'Ajouter à mon Pokédex +'}</button></div></div>`;
- d.querySelector('[data-close]').onclick=()=>d.close();const priceInput=d.querySelector('#singleCardPrice');priceInput.onchange=()=>{const v=Math.max(0,parseFloat(String(priceInput.value).replace(',','.'))||0);db.prices[key]=db.prices[key]||{};db.prices[key].fr=v;save();stats()};const add=d.querySelector('[data-dialog-add]');if(add)add.onclick=()=>{add.disabled=true;addSingle(key).then(()=>{add.textContent='Ajoutée ✓'})};d.showModal();
+ d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE · POKÉDEX</b><button data-close aria-label="Retour au Pokédex">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc(sets[k]?.title||k)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd><dt>Évolution</dt><dd>${esc((Array.isArray(c.evolveFrom)?c.evolveFrom:[c.evolveFrom].filter(Boolean)).join(', ')||'—')}</dd></dl>${priceBlock(key)}<label class="field">Prix de ma carte (€)<input type="number" inputmode="decimal" min="0" step="0.01" id="singleCardPrice" value="${p.fr||''}" placeholder="Saisir un prix"></label><p class="muted">Tu peux renseigner ici le prix estimé ou la valeur à laquelle tu l’as achetée.</p><button class="btn" data-dialog-add="${esc(key)}" ${owned?'disabled':''}>${owned?'Déjà dans mon Pokédex':'Ajouter à mon Pokédex +'}</button></div></div>`;
+ d.querySelector('[data-close]').onclick=()=>d.close();const priceInput=d.querySelector('#singleCardPrice');priceInput.onchange=()=>{const v=Math.max(0,parseFloat(String(priceInput.value).replace(',','.'))||0);db.prices[key]=db.prices[key]||{};db.prices[key].fr=v;save();stats()};const add=d.querySelector('[data-dialog-add]');if(add)add.onclick=()=>{add.disabled=true;addSingle(key).then(()=>{add.textContent='Ajoutée ✓'})};d.showModal();fillPrice(key);
 }
 
 /* ---------- Statistiques, export / import ---------- */
 function stats(){
- const ks=started(),own=Object.keys(db.owned);let valueFR=0,valueJP=0;
- own.forEach(x=>{const k=x.slice(0,x.indexOf(':')),p=db.prices[x]||{};if(sets[k]?.lang==='jp')valueJP+=p.jp||0;else valueFR+=p.fr||0});
- const value=valueFR+(fxRate?valueJP*fxRate:0);
+ const ks=started(),own=Object.keys(db.owned);let value=0,budget=0;
+ own.forEach(x=>value+=priceOf(x));db.singles.forEach(x=>value+=priceOf(x.id));
+ const rows=ks.map(k=>{const t=totalN(k),n=ownedN(k);let rem=0;if(CAT[k])for(const c of cardsOf(k))if(!isOwned(c))rem+=priceOf(c.key);budget+=rem;
+  return `<div class="stat-row"><span>${sets[k].flag} ${esc(sets[k].title)}</span><div class="mini-progress"><i style="width:${t?Math.round(n/t*100):0}%"></i></div><small>${n}/${t||'?'}${rem?' · '+eur(rem):''}</small></div>`});
  $('statOwned').textContent=own.length;$('statSets').textContent=ks.length;$('statSingles').textContent=db.singles.length;
- $('statValue').textContent=(valueFR||valueJP)?(eur(value)+(valueJP&&!fxRate?' + '+jpy(valueJP)+' (taux indisponible)':'')):'—';
- $('statsSets').innerHTML=ks.map(k=>{const t=totalN(k),n=ownedN(k);return `<div class="stat-row"><span>${sets[k].flag} ${esc(sets[k].title)}</span><div class="mini-progress"><i style="width:${t?Math.round(n/t*100):0}%"></i></div><small>${n}/${t||'?'}</small></div>`}).join('')}
+ $('statValue').textContent=value?eur(value):'—';$('statBudget').textContent=budget?eur(budget):'—';$('statsSets').innerHTML=rows.join('')}
 $('exportBtn').onclick=()=>{
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'poketracker',version:3,date:new Date().toISOString(),data:db})],{type:'application/json'}));
  a.download='poketracker-sauvegarde-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)};
@@ -171,9 +175,88 @@ function applyCols(){const c=$('cards');c.style.setProperty('--cols',cols);c.cla
 document.querySelectorAll('[data-cols]').forEach(b=>b.onclick=()=>{cols=+b.dataset.cols;try{localStorage.setItem('poketracker-cols',cols)}catch{}applyCols()});
 applyCols();
 
+/* ---------- Noms anglais des extensions japonaises ---------- */
+const JPN={"PMCG1":"Expansion Pack","PMCG2":"Pokémon Jungle","PMCG3":"Mystery of the Fossils","PMCG4":"Team Rocket","PMCG5":"Leaders' Stadium","PMCG6":"Challenge from the Darkness","neo1":"Gold, Silver, to a New World","neo2":"Crossing the Ruins","neo3":"Awakening Legends","neo4":"Darkness, and to Light","VS1":"Pokémon Card VS","web1":"Pokémon Card web","E1":"Expedition Expansion Pack","E2":"The Town on No Map","E3":"Wind from the Sea","E4":"Split Earth","E5":"Mysterious Mountains","PCG1":"Flight of Legends","PCG2":"Clash of the Blue Sky","PCG3":"Rocket Gang Strikes Back","PCG4":"Golden Sky, Silvery Ocean","PCG5":"Mirage Forest","PCG6":"Holon Research Tower","PCG7":"Holon Phantoms","PCG8":"Miracle Crystal","PCG9":"Offense and Defense of the Furthest Ends","CP1":"Magma Gang vs Aqua Gang: Double Crisis","CP2":"Legendary Shine Collection","SM1M":"Collection Moon","SM1S":"Collection Sun","SM2K":"Islands Await You","SM2L":"Alolan Moonlight","SM3N":"Darkness That Consumes Light","SM3H":"To Have Seen the Battle Rainbow","SM4A":"Ultradimensional Beasts","SM4S":"Awakened Heroes","SM5M":"Ultra Moon","SM5S":"Ultra Sun","SM6":"Forbidden Light","SM6a":"Dragon Storm","SM6b":"Champion Road","SM7":"Charisma of the Wrecked Sky","SM7a":"Thunderclap Spark","SM7b":"Fairy Rise","SM8":"Super-Burst Impact","SM8a":"Dark Order","SM8b":"GX Ultra Shiny","SM9":"Tag Bolt","SM9a":"Night Unison","SM9b":"Full Metal Wall","SM10":"Double Blaze","SM10a":"GG End","SM10b":"Sky Legend","SM11":"Miracle Twins","SM11a":"Remix Bout","SM11b":"Dream League","SM12":"Alter Genesis","SM12a":"Tag All Stars","SM4p":"GX Battle Boost","SM5p":"Ultra Force","SM1p":"Sun & Moon","SM3p":"Shining Legends","SM2p":"Facing a New Trial","S10P":"Space Juggler","S12":"Paradigm Trigger","S8":"Fusion Arts","S7D":"Skyscraping Perfection","S9":"Star Birth","S11a":"Incandescent Arcana","S11":"Lost Abyss","S6H":"Silver Lance","S10a":"Dark Phantasma","S5I":"Single Strike Master","S9a":"Battle Region","S12a":"VSTAR Universe","S8b":"VMAX Climax","S6K":"Jet-Black Spirit","M4":"Ninja Spinner","M1S":"Mega Symphonia","M2":"Inferno X","M-P":"Mega Promo Cards","MC":"Start Deck 100 Battle Collection","M5":"Abyss Eye","M6":"Storm Emeralda","M3":"Nihil Zero","M2a":"MEGA Dream ex","M1L":"Mega Brave","SV5K":"Wild Force","SV2D":"Clay Burst","SV11W":"White Flare","SV4K":"Ancient Roar","SV1S":"Scarlet ex","SV7a":"Paradise Dragona","SV8":"Super Electric Breaker","SV10":"Glory of Team Rocket","SV5M":"Cyber Judge","SV2a":"Pokémon Card 151","SV7":"Stellar Miracle","SV2P":"Snow Hazard","SVK":"Deck Build Box Stellar Miracle","SVLS":"Starter Set Stellar Ceruledge ex","SVLN":"Starter Set Stellar Sylveon ex","SV1a":"Triplet Beat","SV8a":"Terastal Fest ex","SV5a":"Crimson Haze","SV3":"Ruler of the Black Flame","SV9a":"Hot Wind Arena","SV6a":"Night Wanderer","SV3a":"Raging Surf","SV6":"Transformation Mask","SV-P":"Scarlet & Violet Promo Cards","SV4a":"Shiny Treasure ex","SV4M":"Future Flash","SV11B":"Black Bolt","SV9":"Battle Partners","SV1V":"Violet ex","M6a":"30th Celebration"};
+
+/* ---------- Prix du marché (Cardmarket via TCGdex) ---------- */
+const MK='poketracker-market',HK='poketracker-hist';
+let market=read(MK)||{},hist=read(HK)||{};
+const saveMK=()=>{try{localStorage.setItem(MK,JSON.stringify(market));localStorage.setItem(HK,JSON.stringify(hist))}catch{}};
+const today=()=>new Date().toISOString().slice(0,10);
+const keySet=key=>key.slice(0,key.indexOf(':'));
+/* Prix retenu en € : ton prix saisi, sinon ¥ converti, sinon prix Cardmarket. */
+const priceOf=key=>{const p=db.prices[key]||{};if(p.fr>0)return p.fr;if(p.jp>0&&fxRate)return p.jp*fxRate;return market[key]?.eur||0};
+async function fetchPrice(key,force){
+ const k=keySet(key),m=meta[k],n=key.slice(k.length+1);
+ if(!m||sets[k]?.lang==='jp')return null;
+ const c=market[key];if(c&&!force&&c.d===today())return c;
+ try{const r=await fetch(`https://api.tcgdex.net/v2/${m.lang}/cards/${encodeURIComponent(m.id+'-'+n)}`);if(!r.ok)throw 0;
+  const cm=(await r.json()).pricing?.cardmarket;if(!cm){market[key]={none:1,d:today()};saveMK();return market[key]}
+  const e={eur:cm.trend??cm.avg??0,low:cm.low,avg1:cm.avg1,avg7:cm.avg7,avg30:cm.avg30,holo:cm['trend-holo'],d:today(),u:cm.updated};
+  market[key]=e;const h=hist[key]=hist[key]||[];if(!h.length||h[h.length-1][0]!==e.d)h.push([e.d,e.eur]);if(h.length>120)h.shift();
+  saveMK();pushPrice(key,e);return e}
+ catch{return c||null}}
+const pct=(a,b)=>(b>0&&a>=0)?Math.round((a-b)/b*1000)/10:null;
+const chg=v=>v==null?'—':`<b class="${v>=0?'up':'down'}">${v>=0?'+':''}${v} %</b>`;
+function spark(a){if(a.length<2)return'';const mn=Math.min(...a),mx=Math.max(...a),r=mx-mn||1,w=260,h=56;
+ const pts=a.map((v,i)=>`${(i/(a.length-1)*w).toFixed(1)},${(h-4-(v-mn)/r*(h-8)).toFixed(1)}`).join(' ');
+ return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`}
+function priceBlock(key){
+ if(sets[keySet(key)]?.lang==='jp')return '<div class="pricebox"><h3>Prix du marché</h3><p class="muted">Pas de prix automatique pour les cartes japonaises : saisis ton prix en ¥, il est converti en € au taux du jour.</p></div>';
+ return '<div class="pricebox"><h3>Prix du marché · Cardmarket</h3><div id="priceBody">Chargement…</div></div>'}
+async function fillPrice(key,force){
+ if(!$('priceBody'))return;const e=await fetchPrice(key,force),el=$('priceBody');if(!el)return;
+ if(!e){el.innerHTML='Prix indisponible (connexion ou service). <button class="btn" data-refresh-price="'+esc(key)+'">Réessayer</button>';return}
+ if(e.none){el.textContent='Aucun prix Cardmarket pour cette carte.';return}
+ const h=hist[key]||[],pts=[e.avg30,e.avg7,e.avg1,e.eur].filter(v=>v>=0);
+ el.innerHTML=`<div class="price-main"><strong>${eur(e.eur)}</strong><small>tendance${e.low!=null?' · dès '+eur(e.low):''}</small></div><div class="price-chg"><span>24 h ${chg(pct(e.avg1,e.avg7))}</span><span>7 j ${chg(pct(e.eur,e.avg7))}</span><span>30 j ${chg(pct(e.eur,e.avg30))}</span></div>${spark(h.length>1?h.map(x=>x[1]):pts)}<small class="muted">${h.length>1?'Historique suivi sur cet appareil ('+h.length+' relevés)':'Courbe : moyennes 30 j, 7 j, 24 h puis tendance'} · mis à jour le ${esc(String(e.u||e.d).slice(0,10))}</small>${e.holo?`<small>Variante holo / reverse : ${eur(e.holo)}</small>`:''}<button class="btn" data-refresh-price="${esc(key)}">Actualiser</button>`}
+
+/* ---------- Compte et synchronisation (Supabase, optionnel) ---------- */
+const CFG=window.POKETRACKER_CONFIG||{},cloudOn=!!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY);
+let sb=null,user=null,pushTimer=null;
+function cloudUI(msg){const el=$('cloudBox');if(!el)return;
+ if(!cloudOn)el.innerHTML='<p class="muted">Synchronisation non configurée : ajoute ton URL et ta clé Supabase dans config.js (voir SUPABASE.txt).</p>';
+ else el.innerHTML=user?`<p>Connecté : <b>${esc(user.email)}</b></p><div class="backup"><button class="btn" id="cloudSync">Synchroniser</button><button class="btn" id="cloudOut">Se déconnecter</button></div>`:'<input id="cloudEmail" class="searchbox" type="email" placeholder="ton@email.fr" autocomplete="email"><button class="btn" id="cloudIn">Recevoir un lien de connexion</button>';
+ if(msg)el.insertAdjacentHTML('beforeend',`<p class="muted">${esc(msg)}</p>`)}
+async function pushNow(){if(!sb||!user)return;const t=Date.now();db._t=t;save(false);
+ const{error}=await sb.from('collections').upsert({user_id:user.id,data:db,updated_at:new Date(t).toISOString()});if(error)throw error}
+function pushSoon(){if(!sb||!user)return;clearTimeout(pushTimer);pushTimer=setTimeout(()=>pushNow().catch(()=>{}),1500)}
+function pushPrice(key,e){if(!sb||!user)return;sb.from('price_history').upsert({user_id:user.id,card_key:key,day:e.d,eur:e.eur,trend:e.eur,avg7:e.avg7??null,avg30:e.avg30??null}).then(()=>{},()=>{})}
+async function cloudSync(manual){if(!sb||!user)return;
+ try{const{data,error}=await sb.from('collections').select('data,updated_at').eq('user_id',user.id).maybeSingle();if(error)throw error;
+  if(data?.data){const r=data.data,rt=new Date(data.updated_at).getTime();
+   if(!db._s)db={owned:{...r.owned,...db.owned},prices:{...r.prices,...db.prices},singles:[...db.singles,...(r.singles||[]).filter(x=>!db.singles.some(y=>y.id===x.id))],_t:db._t};
+   else if(rt>(db._t||0))db={owned:r.owned||{},prices:r.prices||{},singles:r.singles||[],_t:rt}}
+  db._s=1;await pushNow();
+  const ph=await sb.from('price_history').select('card_key,day,eur').eq('user_id',user.id).order('day');
+  for(const x of ph.data||[]){const h=hist[x.card_key]=hist[x.card_key]||[];if(!h.some(y=>y[0]===x.day))h.push([x.day,Number(x.eur)])}
+  for(const k in hist)hist[k].sort((a,b)=>a[0]<b[0]?-1:1);saveMK();
+  renderHome();renderSingles();stats();if(manual)cloudUI('Synchronisé ✓')}
+ catch(e){cloudUI('Échec de la synchronisation : '+(e.message||e))}}
+async function cloudInit(){cloudUI();if(!cloudOn)return;
+ try{await new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';s.onload=ok;s.onerror=ko;document.head.appendChild(s)});
+  sb=window.supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON_KEY);
+  user=(await sb.auth.getSession()).data.session?.user||null;
+  sb.auth.onAuthStateChange((_e,s)=>{const u=s?.user||null;if(u?.id!==user?.id){user=u;cloudUI();if(u)cloudSync()}});
+  cloudUI();if(user)cloudSync()}
+ catch{cloudUI('Service de connexion indisponible.')}}
+$('cloudBox').onclick=async e=>{const id=e.target.id;
+ if(id==='cloudIn'){const em=$('cloudEmail').value.trim();if(!em)return;
+  const{error}=await sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.origin+location.pathname}});cloudUI(error?'Erreur : '+error.message:'Lien envoyé. Ouvre-le depuis cet appareil.')}
+ else if(id==='cloudOut'){await sb.auth.signOut();user=null;cloudUI()}
+ else if(id==='cloudSync')cloudSync(true)};
+
+/* ---------- Actualiser les prix d'une série ---------- */
+$('refreshSetPrices').onclick=async()=>{const k=cur,out=$('priceProgress');
+ if(sets[k]?.lang==='jp'){out.textContent='Pas de source automatique pour le japonais : saisis les prix en ¥ dans chaque fiche.';return}
+ const keys=cardsOf(k).map(c=>c.key),b=$('refreshSetPrices');let i=0,done=0;b.disabled=true;
+ await Promise.all(Array.from({length:6},async()=>{while(i<keys.length){await fetchPrice(keys[i++]);out.textContent=`Prix récupérés : ${++done} / ${keys.length}`}}));
+ b.disabled=false;out.textContent='Prix à jour ✓';if(cur===k)render();stats()};
+
 /* ---------- Événements ---------- */
 document.addEventListener('click',e=>{
- const t=e.target.closest('[data-block],[data-set],[data-detail],[data-single-detail],[data-add],[data-rm],[data-home],[data-lang]');if(!t)return;const d=t.dataset;
+ const t=e.target.closest('[data-block],[data-set],[data-detail],[data-single-detail],[data-add],[data-rm],[data-home],[data-lang],[data-refresh-price]');if(!t)return;const d=t.dataset;
+ if(d.refreshPrice){const b=$('priceBody');if(b)b.textContent='Chargement…';fillPrice(d.refreshPrice,true);return}
  if(d.rm){e.preventDefault();e.stopPropagation();db.singles=db.singles.filter(z=>z.id!==d.rm);save();renderSingles();stats();return;}
  if(d.block)openBlock(d.block);else if(d.set)openSet(d.set);else if(d.detail)detail(d.detail);else if(d.singleDetail)singleDetail(d.singleDetail);else if(d.add){e.preventDefault();e.stopPropagation();addSingle(d.add,t);}
  else if(d.rm){db.singles=db.singles.filter(z=>z.id!==d.rm);save();renderSingles();stats()}
@@ -199,9 +282,11 @@ const jpyEUR=n=>fxRate?eur((Number(n)||0)*fxRate):'Conversion indisponible';
 async function refreshFx(){try{const r=await fetch('https://api.frankfurter.app/latest?from=JPY&to=EUR');if(!r.ok)throw 0;const x=await r.json(),v=Number(x.rates?.EUR);if(!(v>0))throw 0;fxRate=v;try{localStorage.setItem('poketracker-jpy-eur',String(v));localStorage.setItem('poketracker-jpy-eur-date',x.date||'')}catch{}stats();if(!$('collection').hidden&&sets[cur]?.lang==='jp')render()}catch{}}
 (async()=>{try{const r=await fetch('catalog/index.json');if(!r.ok)return;const x=await r.json();
  for(const s of x.series||[])if(s.logo)SL[s.id]=s.logo;
- for(const e of x.sets||[]){meta[e.key]={serie:e.serie,count:e.count,logo:e.logo||`https://assets.tcgdex.net/${e.lang}/${e.serie}/${e.id}/logo`};if(sets[e.key])continue;
-  const fr=e.lang!=='ja';sets[e.key]={title:e.name,label:'BLOC · '+String(e.serie).toUpperCase()+(fr?' · FRANÇAIS':' · JAPONAIS'),code:e.id+(fr?' · édition française':' · édition japonaise'),flag:fr?'🇫🇷':'🇯🇵',lang:fr?'fr':'jp'}}
+ for(const e of x.sets||[]){meta[e.key]={serie:e.serie,count:e.count,id:e.id,lang:e.lang,logo:e.logo||`https://assets.tcgdex.net/${e.lang}/${e.serie}/${e.id}/logo`};if(e.lang==='ja'&&JPN[e.id]&&sets[e.key])sets[e.key].title=JPN[e.id];if(sets[e.key])continue;
+  const fr=e.lang!=='ja';sets[e.key]={title:(e.lang==='ja'&&JPN[e.id])||e.name,label:'BLOC · '+String(e.serie).toUpperCase()+(fr?' · FRANÇAIS':' · JAPONAIS'),code:e.id+(fr?' · édition française':' · édition japonaise'),flag:fr?'🇫🇷':'🇯🇵',lang:fr?'fr':'jp'}}
+ if(meta['30th'])delete sets['30-fr'];if(meta['m6a-jp'])delete sets['30-jp'];
  renderHome()}catch{}})();
 renderHome();show('landing');
 refreshFx();
+cloudInit();
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));

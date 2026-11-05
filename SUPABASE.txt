@@ -1,0 +1,12 @@
+ACTIVER LE COMPTE ET LA SYNCHRONISATION (gratuit)
+
+1. Crée un compte sur supabase.com puis un projet (New project).
+2. Menu SQL Editor > New query : colle le contenu de supabase/schema.sql > Run.
+3. Menu Project Settings > API : copie « Project URL » et la clé « anon public ».
+4. Dans config.js (sur GitHub) colle les deux valeurs entre les guillemets.
+5. Menu Authentication > URL Configuration : mets l'adresse de ton site
+   (https://nzocomte28-commits.github.io/Poketracker/) dans « Site URL » et « Redirect URLs ».
+6. Sur le site : Profil > Compte > saisis ton e-mail > ouvre le lien reçu.
+
+Ne colle JAMAIS la clé « service_role » dans le site.
+Sans ces étapes, tout fonctionne comme avant, sans compte.
