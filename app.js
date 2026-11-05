@@ -1,4 +1,4 @@
-/* PokéTracker V38 — prix Cardmarket, fiches complètes, synchronisation Supabase, noms anglais pour le japonais.
+/* PokéTracker V40 — prix Cardmarket, fiches complètes, synchronisation Supabase, noms anglais pour le japonais.
    Sauvegarde conservée : poketracker-v3. */
 'use strict';
 const KEY='poketracker-v3',OLD='poketracker-v2',CAT=window.CATALOG||{};
@@ -34,7 +34,7 @@ function migrate(){
 let db=read(KEY)||migrate();db={owned:{},prices:{},singles:[],...db};
 function save(push=true){if(push)db._t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(db))}catch{alert('Sauvegarde impossible : stockage plein ou bloqué par le navigateur. Exporte ta collection depuis Statistiques.')}if(push)pushSoon()}
 const cache={};
-const TG_PARENT={swsh9tg:'swsh9',swsh10tg:'swsh10',swsh11tg:'swsh11',swsh12tg:'swsh12'};
+const TG_PARENT={swsh9tg:'swsh9',swsh10tg:'swsh10',swsh11tg:'swsh11',swsh12tg:'swsh12',swsh45sv:'swsh45',cel25cc:'cel25',swsh125gg:'swsh125'};
 const TG_CHILDREN=Object.fromEntries(Object.entries(TG_PARENT).map(([child,parent])=>[parent,child]));
 const isGallery=k=>Object.prototype.hasOwnProperty.call(TG_PARENT,k);
 const cardsOf=k=>cache[k]||(cache[k]=(CAT[k]||[]).map(c=>{const source=c._sourceSet||k;return {...c,key:source+':'+(c.number??''),number:String(c.number??'')}}));
