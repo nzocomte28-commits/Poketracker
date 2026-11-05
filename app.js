@@ -1,4 +1,4 @@
-/* PokéTracker V25 — script unique. Sauvegarde : poketracker-v3 (migrée depuis poketracker-v2, l'ancienne clé n'est jamais supprimée). */
+/* PokéTracker V26 — script unique. Sauvegarde : poketracker-v3 (migrée depuis poketracker-v2, l'ancienne clé n'est jamais supprimée). */
 'use strict';
 const KEY='poketracker-v3',OLD='poketracker-v2',CAT=window.CATALOG||{};
 const $=id=>document.getElementById(id);
@@ -17,7 +17,7 @@ const sets={
  'mep':S('Promos Méga-Évolution','PROMOS · FRANÇAIS','Promos françaises','🇫🇷','fr'),
  'm1l-jp':S('Méga-Brave',JP,'M1L · édition japonaise','🇯🇵','jp'),'m1s-jp':S('Méga-Symphonia',JP,'M1S · édition japonaise','🇯🇵','jp'),
  '30-fr':S('30 ans Pokémon','30E ANNIVERSAIRE · FRANÇAIS','30C · édition française','🇫🇷','fr'),'30-jp':S('30th Anniversary','30E ANNIVERSAIRE · JAPONAIS','M6a · édition japonaise','🇯🇵','jp')};
-const mega=Object.keys(sets);
+const mega=Object.keys(sets),meta={};
 const T=(id,name,desc,tone,s=[])=>({id,name,desc,tone,sets:s});
 const blocks=[T('mega','Méga-Évolution','Les nouvelles aventures Méga','red',mega),T('sv','Écarlate et Violet','L’ère Écarlate et Violet','violet'),T('swsh','Épée et Bouclier','L’ère Épée et Bouclier','blue'),T('sm','Soleil et Lune','L’ère Soleil et Lune','orange'),T('xy','XY','L’ère XY','cyan'),T('bw','Noir et Blanc','L’ère Noir et Blanc','green'),T('older','Ères précédentes','Diamant et Perle, Platine et plus','gold')];
 
@@ -37,24 +37,33 @@ const cardsOf=k=>cache[k]||(cache[k]=(CAT[k]||[]).map(c=>({...c,key:k+':'+(c.num
 const isOwned=c=>!!db.owned[c.key];
 const price=c=>db.prices[c.key]||{};
 const deal=c=>{const p=price(c);return p.t>0&&p.fr>0&&p.fr<=p.t};
-const started=()=>mega.filter(k=>cardsOf(k).some(isOwned));
+const ownedN=k=>Object.keys(db.owned).filter(x=>x.startsWith(k+':')).length;
+const totalN=k=>(CAT[k]?.length)||meta[k]?.count||0;
+const started=()=>Object.keys(sets).filter(k=>ownedN(k)>0);
+const SB={me:'mega',m:'mega',sv:'sv',swsh:'swsh',s:'swsh',sm:'sm',xy:'xy',bw:'bw'};
+const blockOf=k=>mega.includes(k)?'mega':(SB[String(meta[k]?.serie||'').toLowerCase()]||'older');
+const blockSets=b=>Object.keys(sets).filter(k=>blockOf(k)===b.id);
 
 /* ---------- Navigation ---------- */
 const pages=['landing','blocksPage','blockSetsPage','collectionShelf','pokedexPage','statsPage','collection'];
 let cur='meg-fr',curBlock='mega',filter='all';
 function show(id){pages.forEach(p=>$(p).hidden=p!==id);$('navMenu').classList.toggle('nav-active',id==='landing');window.scrollTo(0,0)}
-function tile(k){const s=sets[k],a=cardsOf(k),n=a.filter(isOwned).length,p=a.length?Math.round(n/a.length*100):0;
- return `<button class="set-tile" data-set="${k}"><span class="set-art">${s.flag}</span><b>${s.title}</b><small>${s.code}</small>${a.length?`<div class="mini-progress"><i style="width:${p}%"></i></div><em>${n}/${a.length} cartes →</em>`:'<em>Catalogue à venir</em>'}</button>`}
+function tile(k){const s=sets[k],t=totalN(k),n=ownedN(k),p=t?Math.round(n/t*100):0;
+ return `<button class="set-tile" data-set="${k}"><span class="set-art">${s.flag}</span><b>${s.title}</b><small>${s.code}</small>${t?`<div class="mini-progress"><i style="width:${p}%"></i></div><em>${n}/${t} cartes →</em>`:'<em>Catalogue à venir</em>'}</button>`}
 function renderHome(){const ks=started();$('myCollections').innerHTML=ks.map(tile).join('');$('noCollections').hidden=ks.length>0}
-function openBlocks(){$('blocksGrid').innerHTML=blocks.map(b=>`<button class="block-tile ${b.tone}" data-block="${b.id}"><span class="block-mark">✦</span><b>${b.name}</b><small>${b.desc}</small><i>${b.sets.length?b.sets.length+' séries':'Catalogue à venir'} →</i></button>`).join('');show('blocksPage')}
+function openBlocks(){$('blocksGrid').innerHTML=blocks.map(b=>`<button class="block-tile ${b.tone}" data-block="${b.id}"><span class="block-mark">✦</span><b>${b.name}</b><small>${b.desc}</small><i>${blockSets(b).length?blockSets(b).length+' séries':'Catalogue à venir'} →</i></button>`).join('');show('blocksPage')}
 function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;curBlock=id;$('blockEyebrow').textContent='BLOC · '+b.name;$('blockTitle').textContent=b.name;
- $('blockSetsGrid').innerHTML=b.sets.length?b.sets.map(tile).join(''):'<p class="muted">Les extensions de cette ère seront ajoutées avec leurs données vérifiées.</p>';show('blockSetsPage')}
+ const ks=blockSets(b);$('blockSetsGrid').innerHTML=ks.length?ks.map(tile).join(''):'<p class="muted">Les extensions de cette ère seront ajoutées avec leurs données vérifiées.</p>';show('blockSetsPage')}
 function openShelf(){const ks=started();$('shelfList').innerHTML=ks.map(tile).join('');$('emptyShelf').hidden=ks.length>0;show('collectionShelf')}
-function openSet(k){cur=k;filter='all';$('search').value='';
+async function ensure(k){if(CAT[k])return true;try{const r=await fetch('catalog/sets/'+k+'.json');if(!r.ok)throw 0;CAT[k]=await r.json();delete cache[k];return true}catch{return false}}
+async function openSet(k){cur=k;filter='all';$('search').value='';
  document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('selected',b.dataset.filter==='all'));
+ show('collection');const s=sets[k];$('setLabel').textContent=s.label;$('setTitle').textContent=s.title;$('setSubtitle').textContent=s.code;
+ if(!CAT[k]){$('cards').hidden=false;$('cards').innerHTML='<p class="muted">Chargement des cartes…</p>';$('empty').hidden=true}
+ const ok=await ensure(k);if(cur!==k)return;
+ if(!ok){const soon=!meta[k];$('cards').innerHTML=soon?'':'<p class="muted">Catalogue indisponible. Vérifie ta connexion.</p>';$('empty').hidden=!soon;return}
  const r=[...new Set(cardsOf(k).map(c=>c.rarity).filter(Boolean))];
- $('rarityFilter').innerHTML='<option value="">Toutes les raretés</option>'+r.map(x=>`<option>${esc(x)}</option>`).join('');$('rarityFilter').hidden=!r.length;
- show('collection');render()}
+ $('rarityFilter').innerHTML='<option value="">Toutes les raretés</option>'+r.map(x=>`<option>${esc(x)}</option>`).join('');$('rarityFilter').hidden=!r.length;render()}
 
 /* ---------- Album ---------- */
 function render(){
@@ -82,25 +91,27 @@ function detail(key){
  d.querySelector('[data-close]').onclick=()=>d.close();d.showModal()}
 
 /* ---------- Pokédex / recherche (accents ignorés, index construit une fois) ---------- */
-let idx=null;
-const index=()=>idx||(idx=Object.keys(CAT).flatMap(k=>cardsOf(k).map(c=>({k,c,t:norm(c.name+' '+c.number)}))));
-function search(q,target){
+let SX=null;
+async function loadSearch(){if(SX)return SX;let a=null;try{const r=await fetch('catalog/search.json');if(r.ok)a=await r.json()}catch{}
+ SX=(a||Object.keys(CAT).flatMap(k=>CAT[k].map(c=>[k,String(c.number),c.name]))).map(e=>({k:e[0],n:e[1],name:e[2],t:norm(e[2]+' '+e[1])}));return SX}
+async function search(q,target){
  q=norm(q.trim());const el=$(target);
  if(q.length<2){el.innerHTML='<p class="muted">Tape au moins 2 lettres.</p>';return}
- el.innerHTML=index().filter(x=>x.t.includes(q)).slice(0,40).map(x=>`<article class="single-card">${x.c.image?`<img src="${esc(x.c.image)}" alt="" loading="lazy" decoding="async">`:'<div class="single-placeholder">✦</div>'}<div><b>${esc(x.c.name)}</b><small>${esc(sets[x.k].title)} · ${esc(x.c.number)}</small><button data-add="${esc(x.c.key)}">Ajouter à mon Pokédex +</button></div></article>`).join('')||'<p class="muted">Aucun résultat.</p>'}
-function addSingle(key){const x=index().find(y=>y.c.key===key);if(!x||db.singles.some(z=>z.id===key))return;
- db.singles.push({id:key,name:x.c.name,number:x.c.number,image:x.c.image||'',setName:sets[x.k].title});save();renderSingles();stats()}
+ const res=(await loadSearch()).filter(x=>x.t.includes(q)).slice(0,40);
+ el.innerHTML=res.map(x=>{const im=(CAT[x.k]||[]).find(c=>String(c.number)===x.n)?.image;return `<article class="single-card">${im?`<img src="${esc(im)}" alt="" loading="lazy" decoding="async">`:'<div class="single-placeholder">✦</div>'}<div><b>${esc(x.name)}</b><small>${esc(sets[x.k]?.title||x.k)} · ${esc(x.n)}</small><button data-add="${esc(x.k+':'+x.n)}">Ajouter à mon Pokédex +</button></div></article>`}).join('')||'<p class="muted">Aucun résultat.</p>'}
+async function addSingle(key){const i=key.indexOf(':'),k=key.slice(0,i),n=key.slice(i+1);
+ if(db.singles.some(z=>z.id===key)||!(await ensure(k)))return;const c=cardsOf(k).find(x=>x.number===n);if(!c)return;
+ db.singles.push({id:key,name:c.name,number:c.number,image:c.image||'',setName:sets[k]?.title||k});save();renderSingles();stats()}
 function renderSingles(){
  $('singlesOwned').innerHTML=db.singles.map(x=>`<article class="single-card">${x.image?`<img src="${esc(x.image)}" alt="" loading="lazy">`:'<div class="single-placeholder">✦</div>'}<div><b>${esc(x.name)}</b><small>${esc(x.setName)} · ${esc(x.number)}</small><button data-rm="${esc(x.id)}">Retirer</button></div></article>`).join('');
  $('emptySingles').hidden=db.singles.length>0}
 
 /* ---------- Statistiques, export / import ---------- */
 function stats(){
- let value=0;const rows=[];
- for(const k of mega){const a=cardsOf(k);if(!a.length)continue;const n=a.filter(isOwned).length;a.filter(isOwned).forEach(c=>value+=price(c).fr||0);
-  rows.push(`<div class="stat-row"><span>${sets[k].flag} ${sets[k].title}</span><div class="mini-progress"><i style="width:${Math.round(n/a.length*100)}%"></i></div><small>${n}/${a.length}</small></div>`)}
- $('statOwned').textContent=Object.keys(db.owned).length;$('statSets').textContent=started().length;$('statSingles').textContent=db.singles.length;
- $('statValue').textContent=value?eur(value):'—';$('statsSets').innerHTML=rows.join('')}
+ const ks=started(),own=Object.keys(db.owned);let value=0;own.forEach(x=>value+=db.prices[x]?.fr||0);
+ $('statOwned').textContent=own.length;$('statSets').textContent=ks.length;$('statSingles').textContent=db.singles.length;
+ $('statValue').textContent=value?eur(value):'—';
+ $('statsSets').innerHTML=ks.map(k=>{const t=totalN(k),n=ownedN(k);return `<div class="stat-row"><span>${sets[k].flag} ${esc(sets[k].title)}</span><div class="mini-progress"><i style="width:${t?Math.round(n/t*100):0}%"></i></div><small>${n}/${t||'?'}</small></div>`}).join('')}
 $('exportBtn').onclick=()=>{
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'poketracker',version:3,date:new Date().toISOString(),data:db})],{type:'application/json'}));
  a.download='poketracker-sauvegarde-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)};
@@ -136,5 +147,9 @@ $('search').oninput=deb(render,100);$('rarityFilter').onchange=render;
 document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('selected',x===b));render()});
 if(!read(KEY))save();
 navigator.storage?.persist?.().catch(()=>{});
+(async()=>{try{const r=await fetch('catalog/index.json');if(!r.ok)return;const x=await r.json();
+ for(const e of x.sets||[]){meta[e.key]={serie:e.serie,count:e.count};if(sets[e.key])continue;
+  const fr=e.lang!=='ja';sets[e.key]={title:e.name,label:'BLOC · '+String(e.serie).toUpperCase()+(fr?' · FRANÇAIS':' · JAPONAIS'),code:e.id+(fr?' · édition française':' · édition japonaise'),flag:fr?'🇫🇷':'🇯🇵',lang:fr?'fr':'jp'}}
+ renderHome()}catch{}})();
 renderHome();show('landing');
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
