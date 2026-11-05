@@ -66,7 +66,7 @@ function tile(k){const s=sets[k],t=totalN(k),n=ownedN(k),p=t?Math.round(n/t*100)
 function renderHome(){const ks=started();$('myCollections').innerHTML=ks.map(tile).join('');$('noCollections').hidden=ks.length>0;
  const total=Object.values(meta).reduce((n,x)=>n+(Number(x.count)||0),0)||Object.values(CAT).reduce((n,x)=>n+(Array.isArray(x)?x.length:0),0);
  $('pokedexOwnedCount').textContent=db.singles.length.toLocaleString('fr-FR');
- $('pokedexTotalCount').textContent=total?total.toLocaleString('fr-FR'):'…'}
+}
 function openBlocks(){$('blocksGrid').innerHTML=blocks.map(b=>{const ks=blockSets(b),t=ks.reduce((a,k)=>a+totalN(k),0),n=ks.reduce((a,k)=>a+ownedN(k),0),p=t?Math.round(n/t*100):0;
  return `<button class="block-card tone-${b.tone}" data-block="${b.id}"><span class="block-stage">${imgTag(logoOf(b),'block-logo',b.name)||`<span class="block-name-big">${esc(b.name)}</span>`}</span><span class="block-foot"><span class="set-text"><b>${esc(b.name)}</b><small>${ks.length?ks.length+' séries · '+n.toLocaleString('fr-FR')+' / '+t.toLocaleString('fr-FR')+' cartes':'Catalogue à venir'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}).join('');show('blocksPage')}
 function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;curBlock=id;$('blockEyebrow').textContent='BLOC · '+b.name;$('blockTitle').innerHTML=imgTag(logoOf(b),'hero-logo',b.name)||esc(b.name);$('blockSetsPage').dataset.tone=b.tone;
@@ -136,7 +136,7 @@ function renderSingles(){
  $('singlesOwned').innerHTML=db.singles.map(x=>`<article class="single-card single-owned-card" data-single-detail="${esc(x.id)}"><div class="single-card-image">${x.image?`<img src="${esc(x.image)}" alt="${esc(x.name)}" loading="lazy" decoding="async">`:'<div class="single-placeholder">✦</div>'}</div><b>${esc(x.name)}</b><small>${esc(x.setName)} · ${esc(x.number)}</small><button data-rm="${esc(x.id)}">Retirer</button></article>`).join('');
  $('emptySingles').hidden=db.singles.length>0;updatePokedexTile();
 }
-function updatePokedexTile(){const a=$('pokedexOwnedCount'),b=$('pokedexTotalCount');if(a)a.textContent=db.singles.length;if(b)b.textContent='32 052'}
+function updatePokedexTile(){const a=$('pokedexOwnedCount');if(a)a.textContent=db.singles.length.toLocaleString('fr-FR')}
 async function singleDetail(key){
  const i=key.indexOf(':'),k=key.slice(0,i),n=key.slice(i+1);if(!(await ensure(k)))return;
  const c=cardsOf(k).find(x=>x.number===n);if(!c)return;
@@ -174,7 +174,8 @@ applyCols();
 /* ---------- Événements ---------- */
 document.addEventListener('click',e=>{
  const t=e.target.closest('[data-block],[data-set],[data-detail],[data-single-detail],[data-add],[data-rm],[data-home],[data-lang]');if(!t)return;const d=t.dataset;
- if(d.block)openBlock(d.block);else if(d.set)openSet(d.set);else if(d.detail)detail(d.detail);else if(d.add){e.preventDefault();e.stopPropagation();addSingle(d.add,t);}
+ if(d.rm){e.preventDefault();e.stopPropagation();db.singles=db.singles.filter(z=>z.id!==d.rm);save();renderSingles();stats();return;}
+ if(d.block)openBlock(d.block);else if(d.set)openSet(d.set);else if(d.detail)detail(d.detail);else if(d.singleDetail)singleDetail(d.singleDetail);else if(d.add){e.preventDefault();e.stopPropagation();addSingle(d.add,t);}
  else if(d.rm){db.singles=db.singles.filter(z=>z.id!==d.rm);save();renderSingles();stats()}
  else if(d.lang!==undefined){langF=d.lang;try{localStorage.setItem('poketracker-lang',langF)}catch{}openBlock(curBlock)}else{show('landing');renderHome()}});
 $('tileSeries').onclick=openBlocks;$('tileCollection').onclick=openShelf;
@@ -183,7 +184,9 @@ $('navMenu').onclick=$('home').onclick=()=>{show('landing');renderHome()};
 $('navSearch').onclick=()=>{$('searchOverlay').hidden=false;$('globalSearch').focus()};
 $('closeSearch').onclick=()=>$('searchOverlay').hidden=true;
 addEventListener('keydown',e=>{if(e.key==='Escape')$('searchOverlay').hidden=true});
-$('globalSearch').oninput=deb(e=>search(e.target.value,'globalResults'));$('singleSearch').oninput=deb(e=>search(e.target.value,'singleResults'));
+$('globalSearch').oninput=deb(e=>search(e.target.value,'globalResults'));
+$('singleSearch').oninput=deb(e=>{const c=$('clearSingleSearch');if(c)c.hidden=!e.target.value;search(e.target.value,'singleResults')});
+$('clearSingleSearch').onclick=()=>{$('singleSearch').value='';$('singleResults').innerHTML='';$('clearSingleSearch').hidden=true;$('singleSearch').focus()};
 $('singleSearch').addEventListener('focus',()=>{if($('singleResults').innerHTML.trim()==='')$('singleResults').innerHTML='<p class="muted">Tape au moins 2 lettres.</p>'});
 $('backBlocks').onclick=openBlocks;$('back').onclick=()=>{show(setReturnPage);requestAnimationFrame(()=>window.scrollTo(0,setReturnScroll))};
 $('search').oninput=deb(render,100);$('rarityFilter').onchange=render;
