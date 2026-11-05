@@ -1,0 +1,11 @@
+PokéTracker V39
+
+Corrections :
+- Affichage de l'album : filtrage explicite et grille forcée visible, y compris lorsque la recherche est vide.
+- Galerie des Dresseurs Épée et Bouclier : les cartes des séries swsh9tg, swsh10tg, swsh11tg et swsh12tg sont intégrées à leur série principale. Les extensions TG ne sont plus affichées séparément.
+- Les identifiants d'origine des cartes TG sont conservés pour retrouver les cartes déjà cochées dans la collection.
+- Barre de navigation inférieure : trois boutons répartis régulièrement dans une barre plus compacte et centrée.
+
+Important :
+- La sauvegarde locale conserve la clé poketracker-v3.
+- Ne supprime pas les données du site dans Safari. Le ZIP ne contient pas la sauvegarde personnelle enregistrée dans ton navigateur.

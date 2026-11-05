@@ -34,16 +34,19 @@ function migrate(){
 let db=read(KEY)||migrate();db={owned:{},prices:{},singles:[],...db};
 function save(push=true){if(push)db._t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(db))}catch{alert('Sauvegarde impossible : stockage plein ou bloqué par le navigateur. Exporte ta collection depuis Statistiques.')}if(push)pushSoon()}
 const cache={};
-const cardsOf=k=>cache[k]||(cache[k]=(CAT[k]||[]).map(c=>({...c,key:k+':'+(c.number??''),number:String(c.number??'')})));
+const TG_PARENT={swsh9tg:'swsh9',swsh10tg:'swsh10',swsh11tg:'swsh11',swsh12tg:'swsh12'};
+const TG_CHILDREN=Object.fromEntries(Object.entries(TG_PARENT).map(([child,parent])=>[parent,child]));
+const isGallery=k=>Object.prototype.hasOwnProperty.call(TG_PARENT,k);
+const cardsOf=k=>cache[k]||(cache[k]=(CAT[k]||[]).map(c=>{const source=c._sourceSet||k;return {...c,key:source+':'+(c.number??''),number:String(c.number??'')}}));
 const isOwned=c=>!!db.owned[c.key];
 const price=c=>db.prices[c.key]||{};
 const deal=c=>{const p=price(c);return p.t>0&&p.fr>0&&p.fr<=p.t};
-const ownedN=k=>Object.keys(db.owned).filter(x=>x.startsWith(k+':')).length;
-const totalN=k=>(CAT[k]?.length)||meta[k]?.count||0;
+const ownedN=k=>{const child=TG_CHILDREN[k];return Object.keys(db.owned).filter(x=>x.startsWith(k+':')||(child&&x.startsWith(child+':'))).length};
+const totalN=k=>{const child=TG_CHILDREN[k];if(child&&CAT[k]&&CAT[child])return CAT[k].length;return (CAT[k]?.length||meta[k]?.count||0)+(child?(meta[child]?.count||CAT[child]?.length||0):0)};
 const started=()=>Object.keys(sets).filter(k=>ownedN(k)>0);
 const SB={me:'mega',m:'mega',sv:'sv',swsh:'swsh',s:'swsh',sm:'sm',xy:'xy',bw:'bw'};
 const blockOf=k=>mega.includes(k)?'mega':(SB[String(meta[k]?.serie||'').toLowerCase()]||'older');
-const blockSets=b=>Object.keys(sets).filter(k=>blockOf(k)===b.id);
+const blockSets=b=>Object.keys(sets).filter(k=>blockOf(k)===b.id&&!isGallery(k));
 const SL={};let langF=(()=>{try{return localStorage.getItem('poketracker-lang')}catch{return null}})()==='jp'?'jp':'fr';
 const toneOf=k=>(blocks.find(b=>b.id===blockOf(k))||{}).tone||'slate';
 const BLOCK_BASE={mega:'meg-fr',sv:'sv01',swsh:'swsh1',sm:'sm1',xy:'xy1',bw:'bw1',older:'base1'};
@@ -76,8 +79,14 @@ function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;curBlock=i
  const ks=blockSets(b).filter(k=>sets[k].lang===langF);chips(b);$('blockSetsGrid').innerHTML=ks.length?ks.map(tile).join(''):'<p class="muted">Aucune série dans cette langue pour le moment.</p>';show('blockSetsPage')}
 function openShelf(){const ks=started();$('shelfList').innerHTML=ks.map(tile).join('');$('emptyShelf').hidden=ks.length>0;show('collectionShelf')}
 const ensureJobs={};
-async function ensure(k){if(CAT[k])return true;if(ensureJobs[k])return ensureJobs[k];
- ensureJobs[k]=(async()=>{try{const r=await fetch('catalog/sets/'+k+'.json');if(!r.ok)throw 0;CAT[k]=await r.json();delete cache[k];return true}catch{return false}finally{delete ensureJobs[k]}})();return ensureJobs[k]}
+async function ensure(k){if(ensureJobs[k])return ensureJobs[k];
+ ensureJobs[k]=(async()=>{try{
+  if(!CAT[k]){const r=await fetch('catalog/sets/'+k+'.json');if(!r.ok)throw 0;CAT[k]=await r.json()}
+  const child=TG_CHILDREN[k];
+  if(child&&!CAT[child]){try{const r=await fetch('catalog/sets/'+child+'.json');if(r.ok)CAT[child]=(await r.json()).map(c=>({...c,_sourceSet:child}))}catch{}}
+  if(child&&CAT[child]){const base=CAT[k].filter(c=>c._sourceSet!==child);CAT[k]=base.concat(CAT[child]);}
+  delete cache[k];return true
+ }catch{return false}finally{delete ensureJobs[k]}})();return ensureJobs[k]}
 async function openSet(k){setReturnPage=activePage==='collectionShelf'?'collectionShelf':'blockSetsPage';setReturnScroll=window.scrollY;
  $('back').textContent=setReturnPage==='collectionShelf'?'← Retour à ma collection':'← Retour aux séries';
  cur=k;filter='all';$('search').value='';
@@ -92,7 +101,11 @@ async function openSet(k){setReturnPage=activePage==='collectionShelf'?'collecti
 /* ---------- Album ---------- */
 function render(){
  const s=sets[cur],all=cardsOf(cur),q=norm($('search').value),r=$('rarityFilter').value;
- const shown=all.filter(c=>(filter==='all'||(filter==='owned')===isOwned(c))&&(!r||c.rarity===r)&&norm([c.name,c.number,c.rarity,c.category].join(' ')).includes(q));
+ const shown=(filter==='all'&&!q&&!r)?all:all.filter(c=>{
+  const matchesFilter=filter==='all'||(filter==='owned'?isOwned(c):!isOwned(c));
+  const matchesText=!q||norm([c.name,c.number,c.rarity,c.category].join(' ')).includes(q);
+  return matchesFilter&&matchesText&&(!r||c.rarity===r);
+ });
  let v=0,rem=0,vj=0,rj=0;for(const c of all){const p=price(c),x=priceOf(c.key);if(isOwned(c)){v+=x;vj+=p.jp||0}else{rem+=x;rj+=p.jp||0}}
  const n=all.filter(isOwned).length,pc=all.length?Math.round(n/all.length*100):0;
  $('setLabel').textContent=s.label;$('setTitle').textContent=s.title;$('setSubtitle').textContent=s.code;
@@ -100,7 +113,7 @@ function render(){
  $('value').textContent=v?eur(v):'—';$('remain').textContent=rem?eur(rem):'—';
  $('valueJP').textContent=vj?jpy(vj)+(fxRate?' · ≈ '+jpyEUR(vj):''):'—';$('remainJP').textContent=rj?jpy(rj)+(fxRate?' · ≈ '+jpyEUR(rj):''):'—';
  $('valueJPWrap').hidden=$('remainJPWrap').hidden=s.lang!=='jp';
- $('cards').classList.add('album-grid');
+ $('cards').classList.add('album-grid');$('cards').style.display='grid';
  $('cards').innerHTML=shown.map(c=>`<button class="album-card ${isOwned(c)?'is-owned':'is-missing'}" data-detail="${esc(c.key)}"><span class="album-art">${c.image?`<img loading="lazy" decoding="async" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<span class="album-no-image">✦</span>'}</span><span class="album-number">#${esc(c.number)}</span><span class="album-name">${esc(c.name)}</span>${deal(c)?'<span class="deal" title="Sous ton prix cible">🎯</span>':''}</button>`).join('');
  $('cards').hidden=!shown.length;$('empty').hidden=all.length>0;
  if(all.length&&!shown.length){$('cards').hidden=false;$('cards').innerHTML='<p class="meta">Aucun résultat.</p>'}}
