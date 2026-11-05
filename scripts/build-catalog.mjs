@@ -1,127 +1,79 @@
-// PokéTracker V13 — catalogue FR/JP depuis TCGdex.
-// Les données sont téléchargées par GitHub Actions puis stockées dans le dépôt.
-// Filtrage par catégorie uniquement : les cartes Dresseur contenant « Énergie » restent.
+// PokéTracker V26 — catalogue complet (toutes les séries FR + JP) depuis TCGdex.
+// Un fichier JSON par extension (catalog/sets/<clé>.json), un index et un fichier de recherche.
+// Les images ne sont PAS copiées : elles sont chargées depuis assets.tcgdex.net.
+// Incrémental : une extension déjà générée n'est pas retéléchargée (relancer le workflow complète le reste).
 import fs from 'node:fs/promises';
-import path from 'node:path';
 
-const API = 'https://api.tcgdex.net/v2';
-const config = JSON.parse(await fs.readFile('catalog-sets.json', 'utf8'));
-const safe = value => String(value ?? '').replace(/[^a-zA-Z0-9._-]/g, '_');
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const API = 'https://api.tcgdex.net/v2', LANGS = ['fr', 'ja'];
+const LEGACY = {'fr:me01': 'meg-fr'};
+const MAX_MS = 5 * 60 * 60 * 1000, START = Date.now();
+const delay = ms => new Promise(r => setTimeout(r, ms));
+const keyOf = (lang, id) => LEGACY[lang + ':' + id] || id.toLowerCase().replace(/[^a-z0-9]+/g, '') + (lang === 'ja' ? '-jp' : '');
 
-async function getJson(url, attempts = 3) {
-  let last;
-  for (let i = 0; i < attempts; i++) {
+async function get(url, tries = 4) {
+  for (let i = 0; i < tries; i++) {
     try {
-      const response = await fetch(url, {headers:{'user-agent':'PokeTracker/13'}});
-      if (!response.ok) throw new Error(`HTTP ${response.status} — ${url}`);
-      return await response.json();
-    } catch (error) {
-      last = error;
-      await delay(500 * (i + 1));
-    }
+      const r = await fetch(url, {headers: {'user-agent': 'PokeTracker/26'}});
+      if (r.ok) return await r.json();
+      if (r.status === 404) return null;
+    } catch {}
+    await delay(600 * (i + 1));
   }
-  throw last;
+  return null;
 }
-
 async function pool(items, limit, task) {
-  let next = 0;
-  const workers = Array.from({length:limit}, async () => {
-    while (true) {
-      const index = next++;
-      if (index >= items.length) return;
-      await task(items[index], index);
-    }
-  });
-  await Promise.all(workers);
+  let i = 0;
+  await Promise.all(Array.from({length: limit}, async () => { while (i < items.length) await task(items[i++]); }));
 }
 
-let catalog = {};
-try {
-  const source = await fs.readFile('catalog-data.js','utf8');
-  const start = source.indexOf('=');
-  const end = source.lastIndexOf(';');
-  if (start >= 0 && end > start) catalog = JSON.parse(source.slice(start+1,end));
-} catch {}
+await fs.mkdir('catalog/sets', {recursive: true});
+const index = [], search = [], failed = [];
 
-let failures = [];
-for (const set of config) {
-  try {
-    let details = null;
-    try { details = await getJson(`${API}/${set.lang}/sets/${encodeURIComponent(set.id)}`); } catch {}
-    if ((!details || !Array.isArray(details.cards) || !details.cards.length) && set.search) {
-      const norm = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const all = await getJson(`${API}/${set.lang}/sets`);
-      const hits = all.filter(x => norm(x.name).includes(norm(set.search)));
-      if (hits.length === 1) details = await getJson(`${API}/${set.lang}/sets/${encodeURIComponent(hits[0].id)}`);
-    }
-    if (!details || !Array.isArray(details.cards) || details.cards.length === 0) {
-      throw new Error('Aucune carte trouvée dans TCGdex (identifiant ou nom introuvable)');
-    }
-
-    const cards = [];
-    await pool(details.cards, 5, async brief => {
-      const full = await getJson(`${API}/${set.lang}/cards/${encodeURIComponent(brief.id)}`);
-      const category = String(full.category || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
-      if (category === 'energy' || category === 'energie') return; // ne supprime pas les cartes Dresseur « Énergie »
-
-      let image = '';
-      if (brief.image) {
-        const relative = `catalog/images/${set.key}/${safe(brief.localId)}.webp`;
-        await fs.mkdir(path.dirname(relative), {recursive:true});
-        try {
-          await fs.access(relative);
-          image = relative;
-        } catch {
-          try {
-            const response = await fetch(`${brief.image}/low.webp`);
-            if (response.ok) {
-              await fs.writeFile(relative, Buffer.from(await response.arrayBuffer()));
-              image = relative;
-            } else {
-              const fallback = await fetch(`${brief.image}/low.png`);
-              if (fallback.ok) {
-                const png = `catalog/images/${set.key}/${safe(brief.localId)}.png`;
-                await fs.writeFile(png, Buffer.from(await fallback.arrayBuffer()));
-                image = png;
-              }
-            }
-          } catch (error) {
-            console.warn(`Image non téléchargée ${brief.id}: ${error.message}`);
+for (const lang of LANGS) {
+  const series = await get(`${API}/${lang}/series`) || [];
+  for (const s of series) {
+    const serie = await get(`${API}/${lang}/series/${encodeURIComponent(s.id)}`);
+    if (String(s.id).toLowerCase() === 'tcgp') continue; // Pokémon TCG Pocket : hors périmètre
+    for (const b of serie?.sets || []) {
+      const key = keyOf(lang, b.id), file = `catalog/sets/${key}.json`;
+      let cards = null;
+      try { cards = JSON.parse(await fs.readFile(file, 'utf8')); } catch {}
+      if (!cards && Date.now() - START < MAX_MS) {
+        const d = await get(`${API}/${lang}/sets/${encodeURIComponent(b.id)}`);
+        if (d?.cards?.length) {
+          const out = [];
+          await pool(d.cards, 6, async c => {
+            const f = await get(`${API}/${lang}/cards/${encodeURIComponent(c.id)}`);
+            if (!f) return;
+            const cat = String(f.category || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+            if (cat === 'energy' || cat === 'energie') return; // les cartes Dresseur « Énergie » sont conservées
+            const o = {number: String(f.localId ?? c.localId), name: f.name || c.name};
+            if (f.image) o.image = f.image + '/low.webp';
+            if (f.rarity) o.rarity = f.rarity;
+            if (f.category) o.category = f.category;
+            if (f.types?.length) o.types = f.types;
+            if (f.hp) o.hp = f.hp;
+            if (f.illustrator) o.illustrator = f.illustrator;
+            if (f.variants) o.variants = f.variants;
+            out.push(o);
+          });
+          if (out.length) {
+            out.sort((x, y) => x.number.localeCompare(y.number, undefined, {numeric: true}));
+            await fs.writeFile(file, JSON.stringify(out));
+            cards = out;
           }
         }
       }
-
-      cards.push({
-        id: brief.id,
-        number: String(brief.localId ?? ''),
-        name: full.name || brief.name || '',
-        category: full.category || '',
-        rarity: full.rarity || '',
-        types: full.types || [],
-        hp: full.hp || '',
-        illustrator: full.illustrator || '',
-        variants: full.variants || {},
-        image,
-        imageSource: brief.image || ''
-      });
-    });
-
-    cards.sort((a,b) => a.number.localeCompare(b.number, undefined, {numeric:true}));
-    if (!cards.length) throw new Error('Toutes les entrées ont été filtrées');
-    if (set.expectedCards && cards.length !== set.expectedCards) {
-      console.warn(`${set.displayCode}: ${cards.length} cartes reçues, ${set.expectedCards} attendues selon la référence catalogue. Vérifier les données.`);
+      if (!cards) { failed.push(`${lang}/${b.id}`); continue; }
+      index.push({key, lang, serie: s.id, id: b.id, name: b.name, count: cards.length});
+      for (const c of cards) search.push([key, c.number, c.name]);
+      console.log(`✔ ${key} (${cards.length})`);
     }
-    catalog[set.key] = cards;
-    console.log(`${set.displayCode}: ${cards.length} cartes ajoutées au catalogue.`);
-  } catch (error) {
-    failures.push(`${set.displayCode}: ${error.message}`);
-    console.error(`${set.displayCode}: échec — ${error.message}`);
   }
 }
 
-await fs.writeFile('catalog-data.js', `window.CATALOG=${JSON.stringify(catalog)};` + String.fromCharCode(10));
-if (failures.length) {
-  console.error(String.fromCharCode(10) + 'Certaines séries n’ont pas été actualisées :' + String.fromCharCode(10) + failures.join(String.fromCharCode(10)));
-  process.exitCode = 1; // les séries réussies restent enregistrées, mais le workflow signale les séries manquantes
-}
+if (!index.length) { console.error('Aucune extension récupérée.'); process.exit(1); }
+await fs.writeFile('catalog/index.json', JSON.stringify({generated: new Date().toISOString(), sets: index}));
+await fs.writeFile('catalog/search.json', JSON.stringify(search));
+console.log(`${index.length} extensions, ${search.length} cartes.`);
+if (failed.length) console.log(`À relancer (non récupérées) : ${failed.join(', ')}`);
