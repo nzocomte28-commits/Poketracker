@@ -204,3 +204,48 @@ body.pixel-world .single-card .single-placeholder[hidden]{display:none!important
  body.pixel-world .home-tile .tile-art-collection{width:47%;height:88%;}
  body.pixel-world .bottom-nav.pixel-bottom-nav{height:62px!important;}
 }
+
+
+/* PokéTracker V34 — tuiles mieux équilibrées et Pokédex en grille de 4 */
+body.pixel-world .home-tile .tile-art-collection{
+ width:39%!important;height:66%!important;right:4px!important;bottom:5px!important;
+ object-fit:contain!important;object-position:center!important;border-radius:9px!important;
+ mask-image:linear-gradient(90deg,transparent 0%,#000 14%)!important;opacity:.88!important;
+}
+body.pixel-world .home-tile .tile-art-series{
+ width:43%!important;height:54%!important;right:7px!important;bottom:7px!important;
+ object-fit:contain!important;
+}
+body.pixel-world .home-tile .tile-art-pokedex{
+ width:37%!important;height:54%!important;right:7px!important;bottom:7px!important;
+ object-fit:contain!important;mix-blend-mode:multiply;
+}
+body.pixel-world .single-results{
+ display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ gap:8px!important;align-items:stretch;
+}
+body.pixel-world .single-card{
+ min-width:0!important;display:flex!important;flex-direction:column!important;
+ align-items:stretch!important;gap:5px!important;padding:6px!important;
+ border-radius:11px!important;cursor:pointer;overflow:hidden;
+}
+body.pixel-world .single-card .single-card-image{
+ width:100%!important;aspect-ratio:2.5/3.5!important;display:grid;place-items:center;
+ overflow:hidden;border-radius:6px;background:#0a2929;
+}
+body.pixel-world .single-card .single-card-image img,
+body.pixel-world .single-card .single-placeholder{
+ width:100%!important;height:100%!important;object-fit:contain!important;
+ background:transparent!important;border-radius:5px!important;
+}
+body.pixel-world .single-card>b{font-size:clamp(9px,2.8vw,13px)!important;line-height:1.15!important;overflow-wrap:anywhere;}
+body.pixel-world .single-card>small{font-size:clamp(8px,2.2vw,10px)!important;line-height:1.15!important;overflow-wrap:anywhere;}
+body.pixel-world .single-card button{align-self:stretch!important;width:100%;font-size:clamp(8px,2.3vw,11px)!important;padding:5px 2px!important;min-height:32px!important;}
+body.pixel-world .single-owned-card button{margin-top:auto;}
+body.pixel-world .single-result-card{cursor:pointer;}
+body.pixel-world #singleCardDialog{max-width:min(94vw,620px);max-height:88vh;overflow:auto;}
+body.pixel-world #singleCardDialog .v23-detail-body{gap:14px;}
+@media(max-width:380px){
+ body.pixel-world .single-results{gap:6px!important;}
+ body.pixel-world .single-card{padding:4px!important;}
+}

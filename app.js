@@ -121,28 +121,30 @@ async function search(q,target){
  q=norm(q.trim());const el=$(target);
  if(q.length<2){el.innerHTML='<p class="muted">Tape au moins 2 lettres.</p>';return}
  const res=(await loadSearch()).filter(x=>x.t.includes(q)).slice(0,40);
- // Charge les fiches des séries trouvées avant de chercher les images : le catalogue complet n'est pas préchargé.
- await Promise.all([...new Set(res.map(x=>x.k))].map(ensure));
- el.innerHTML=res.map(x=>{const c=cardsOf(x.k).find(c=>sameCardNumber(c.number,x.n));const id=x.k+':'+(c?.number||x.n);const im=c?.image;
- const added=db.singles.some(z=>z.id===id);
- return `<article class="single-card">${im?`<img src="${esc(im)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none';this.nextElementSibling.hidden=false">`:' '}<div class="single-placeholder" ${im?'hidden':''}>✦</div><div><b>${esc(x.name)}</b><small>${esc(sets[x.k]?.title||x.k)} · ${esc(c?.number||x.n)}</small><button data-add="${esc(id)}" ${added?'disabled':''}>${added?'Déjà dans mon Pokédex ✓':'Ajouter à mon Pokédex +'}</button></div></article>`}).join('')||'<p class="muted">Aucun résultat.</p>'}
-const singleAddLocks=new Set();
-async function addSingle(key,button){
- if(singleAddLocks.has(key))return;singleAddLocks.add(key);
- const original=button?.textContent||'Ajouter à mon Pokédex +';if(button){button.disabled=true;button.textContent='Ajout en cours…'}
- try{const i=key.indexOf(':'),k=key.slice(0,i),n=key.slice(i+1);
-  if(!(await ensure(k)))throw new Error('catalogue');
-  const c=cardsOf(k).find(x=>sameCardNumber(x.number,n));if(!c)throw new Error('carte');
-  const id=k+':'+c.number;if(!db.singles.some(z=>z.id===id)){
-   db.singles.push({id,name:c.name,number:c.number,image:c.image||'',setName:sets[k]?.title||k});save();renderSingles();stats();renderHome();
-  }
-  if(button){button.textContent='Ajoutée ✓';button.disabled=true}
- }catch(err){if(button){button.disabled=false;button.textContent='Réessayer'} }
- finally{singleAddLocks.delete(key)}
+ const keys=[...new Set(res.map(x=>x.k))];await Promise.all(keys.map(ensure));
+ el.innerHTML=res.map(x=>{const c=cardsOf(x.k).find(c=>String(c.number)===String(x.n));const im=c?.image||'';const key=x.k+':'+x.n;
+ return `<article class="single-card single-result-card" data-single-detail="${esc(key)}"><div class="single-card-image">${im?`<img src="${esc(im)}" alt="${esc(x.name)}" loading="lazy" decoding="async">`:'<div class="single-placeholder">✦</div>'}</div><b>${esc(x.name)}</b><small>${esc(sets[x.k]?.title||x.k)} · ${esc(x.n)}</small><button data-add="${esc(key)}">Ajouter +</button></article>`}).join('')||'<p class="muted">Aucun résultat.</p>'
+}
+async function addSingle(key){const i=key.indexOf(':'),k=key.slice(0,i),n=key.slice(i+1);
+ if(db.singles.some(z=>z.id===key))return;
+ const btn=document.querySelector(`[data-add="${CSS.escape(key)}"]`);if(btn){btn.disabled=true;btn.textContent='Ajout…'}
+ if(!(await ensure(k))){if(btn){btn.disabled=false;btn.textContent='Réessayer'}return}
+ const c=cardsOf(k).find(x=>x.number===n);if(!c)return;
+ db.singles.push({id:key,name:c.name,number:c.number,image:c.image||'',setName:sets[k]?.title||k});save();renderSingles();stats();
 }
 function renderSingles(){
- $('singlesOwned').innerHTML=db.singles.map(x=>`<article class="single-card">${x.image?`<img src="${esc(x.image)}" alt="" loading="lazy">`:'<div class="single-placeholder">✦</div>'}<div><b>${esc(x.name)}</b><small>${esc(x.setName)} · ${esc(x.number)}</small><button data-rm="${esc(x.id)}">Retirer</button></div></article>`).join('');
- $('emptySingles').hidden=db.singles.length>0}
+ $('singlesOwned').innerHTML=db.singles.map(x=>`<article class="single-card single-owned-card" data-single-detail="${esc(x.id)}"><div class="single-card-image">${x.image?`<img src="${esc(x.image)}" alt="${esc(x.name)}" loading="lazy" decoding="async">`:'<div class="single-placeholder">✦</div>'}</div><b>${esc(x.name)}</b><small>${esc(x.setName)} · ${esc(x.number)}</small><button data-rm="${esc(x.id)}">Retirer</button></article>`).join('');
+ $('emptySingles').hidden=db.singles.length>0;updatePokedexTile();
+}
+function updatePokedexTile(){const a=$('pokedexOwnedCount'),b=$('pokedexTotalCount');if(a)a.textContent=db.singles.length;if(b)b.textContent='32 052'}
+async function singleDetail(key){
+ const i=key.indexOf(':'),k=key.slice(0,i),n=key.slice(i+1);if(!(await ensure(k)))return;
+ const c=cardsOf(k).find(x=>x.number===n);if(!c)return;
+ let d=$('singleCardDialog');if(!d){d=document.createElement('dialog');d.id='singleCardDialog';d.className='v23-dialog';document.body.appendChild(d)}
+ const owned=db.singles.some(x=>x.id===key);
+ d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE · POKÉDEX</b><button data-close aria-label="Retour au Pokédex">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc(sets[k]?.title||k)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd><dt>Évolution</dt><dd>${esc((Array.isArray(c.evolveFrom)?c.evolveFrom:[c.evolveFrom].filter(Boolean)).join(', ')||'—')}</dd></dl><button class="btn" data-dialog-add="${esc(key)}" ${owned?'disabled':''}>${owned?'Déjà dans mon Pokédex':'Ajouter à mon Pokédex +'}</button></div></div>`;
+ d.querySelector('[data-close]').onclick=()=>d.close();const add=d.querySelector('[data-dialog-add]');if(add)add.onclick=()=>{add.disabled=true;addSingle(key).then(()=>{add.textContent='Ajoutée ✓'})};d.showModal();
+}
 
 /* ---------- Statistiques, export / import ---------- */
 function stats(){
@@ -171,7 +173,7 @@ applyCols();
 
 /* ---------- Événements ---------- */
 document.addEventListener('click',e=>{
- const t=e.target.closest('[data-block],[data-set],[data-detail],[data-add],[data-rm],[data-home],[data-lang]');if(!t)return;const d=t.dataset;
+ const t=e.target.closest('[data-block],[data-set],[data-detail],[data-single-detail],[data-add],[data-rm],[data-home],[data-lang]');if(!t)return;const d=t.dataset;
  if(d.block)openBlock(d.block);else if(d.set)openSet(d.set);else if(d.detail)detail(d.detail);else if(d.add){e.preventDefault();e.stopPropagation();addSingle(d.add,t);}
  else if(d.rm){db.singles=db.singles.filter(z=>z.id!==d.rm);save();renderSingles();stats()}
  else if(d.lang!==undefined){langF=d.lang;try{localStorage.setItem('poketracker-lang',langF)}catch{}openBlock(curBlock)}else{show('landing');renderHome()}});
@@ -182,6 +184,7 @@ $('navSearch').onclick=()=>{$('searchOverlay').hidden=false;$('globalSearch').fo
 $('closeSearch').onclick=()=>$('searchOverlay').hidden=true;
 addEventListener('keydown',e=>{if(e.key==='Escape')$('searchOverlay').hidden=true});
 $('globalSearch').oninput=deb(e=>search(e.target.value,'globalResults'));$('singleSearch').oninput=deb(e=>search(e.target.value,'singleResults'));
+$('singleSearch').addEventListener('focus',()=>{if($('singleResults').innerHTML.trim()==='')$('singleResults').innerHTML='<p class="muted">Tape au moins 2 lettres.</p>'});
 $('backBlocks').onclick=openBlocks;$('back').onclick=()=>{show(setReturnPage);requestAnimationFrame(()=>window.scrollTo(0,setReturnScroll))};
 $('search').oninput=deb(render,100);$('rarityFilter').onchange=render;
 document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('selected',x===b));render()});
