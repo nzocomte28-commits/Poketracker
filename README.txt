@@ -1,26 +1,25 @@
-POKETRACKER V21 — PATCH GAME BOY
+POKÉTRACKER V22 — PACK COMPLET DE MISE EN PAGE ET NAVIGATION
 
-Cette première mise à jour applique le thème Game Boy / Pokédex et ajoute un petit tableau de statistiques sur l'accueil.
-Elle conserve impérativement la clé localStorage poketracker-v2.
+Contenu :
+- index.html : accueil en 4 tuiles, pages blocs/extensions, classeurs, Pokédex, statistiques, barre flottante et recherche.
+- styles.css : identité noire/rouge, typographies rétro, navigation translucide.
+- v22-navigation.js : couche de navigation à ajouter à la fin de app.js actuel.
 
-1) Dans GitHub, ouvre le dépôt Poketracker puis styles.css.
-2) Appuie sur le crayon, va tout en bas, colle le contenu de v21-gameboy.css, puis Commit changes.
-3) Ouvre index.html, remplace le paragraphe d'introduction exact :
-<p class="muted">Retrouve tes collections et complète tes Master Sets, carte après carte.</p>
-par :
-<p class="muted">Retrouve tes collections et complète tes Master Sets, carte après carte.</p>
-<div class="gb-screen-label"><span>POKÉDEX · MODE COLLECTION</span><i>● GAME BOY STYLE</i></div>
-<div class="gb-stats"><div class="gb-stat"><span>Cartes possédées</span><b id="globalOwned">0</b></div><div class="gb-stat"><span>Cartes suivies</span><b id="globalTotal">0</b></div><div class="gb-stat"><span>Progression</span><b id="globalPct">0%</b></div></div>
-Puis remplace les deux références en bas de page :
-catalog-data.js?v=18 -> catalog-data.js?v=21
-app.js?v=18 -> app.js?v=21
-4) Ouvre app.js. Dans la fonction renderHome(), juste après la ligne :
-function renderHome(){
-ajoute :
- const globalOwned=db.cards.filter(c=>c.owned).length,globalTotal=db.cards.length,globalPct=globalTotal?Math.round(globalOwned/globalTotal*100):0;
- if($('globalOwned'))$('globalOwned').textContent=globalOwned;
- if($('globalTotal'))$('globalTotal').textContent=globalTotal;
- if($('globalPct'))$('globalPct').textContent=globalPct+'%';
-5) Ouvre sw.js et remplace poketracker-v18 par poketracker-v21.
+IMPORTANT :
+Ce pack est une maquette fonctionnelle de navigation, pas une mise à jour déjà publiée.
+Pour protéger les cartes cochées, ne remplace PAS app.js par un fichier neuf.
+La clé de sauvegarde reste poketracker-v2.
 
-IMPORTANT : ne supprime pas localStorage, ne modifie pas KEY='poketracker-v2', ne remplace pas catalog-data.js.
+Installation prudente :
+1. Faire une copie de sauvegarde des fichiers GitHub actuels.
+2. Remplacer index.html par celui du pack.
+3. Remplacer styles.css par celui du pack.
+4. Ouvrir app.js, aller à la fin et ajouter le contenu de v22-navigation.js.
+5. Dans index.html, vérifier que les scripts catalog-data.js puis app.js sont chargés en bas.
+6. Commit les changements, puis tester le site.
+
+LIMITES DE CETTE MAQUETTE :
+- Le catalogue actuel contient uniquement les séries déjà présentes dans l'application ; les autres ères sont des emplacements visuels, pas des extensions inventées.
+- La recherche à l'unité ne trouve que les cartes des catalogues déjà intégrés.
+- Les cartes ajoutées au Pokédex sont stockées dans db.singles, dans la même sauvegarde poketracker-v2.
+- Les prix et la synchronisation des données de marché ne sont pas ajoutés dans cette version.
