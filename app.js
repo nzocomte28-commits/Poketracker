@@ -1,4 +1,4 @@
-/* PokéTracker V24 — script unique. Sauvegarde : poketracker-v3 (migrée depuis poketracker-v2, l'ancienne clé n'est jamais supprimée). */
+/* PokéTracker V25 — script unique. Sauvegarde : poketracker-v3 (migrée depuis poketracker-v2, l'ancienne clé n'est jamais supprimée). */
 'use strict';
 const KEY='poketracker-v3',OLD='poketracker-v2',CAT=window.CATALOG||{};
 const $=id=>document.getElementById(id);
@@ -111,6 +111,12 @@ $('importFile').onchange=async e=>{
   if(!confirm('Remplacer ta collection actuelle par cette sauvegarde ?'))return;
   db={owned:d.owned,prices:d.prices,singles:Array.isArray(d.singles)?d.singles:[]};save();renderHome();renderSingles();stats();alert('Sauvegarde importée.')}
  catch{alert('Fichier invalide : choisis une sauvegarde PokéTracker (.json).')}};
+
+/* ---------- Cartes par ligne (4 à 8) ---------- */
+let cols=+(()=>{try{return localStorage.getItem('poketracker-cols')}catch{return 0}})()||4;
+function applyCols(){const c=$('cards');c.style.setProperty('--cols',cols);c.classList.toggle('compact',cols>=6);document.querySelectorAll('[data-cols]').forEach(b=>b.classList.toggle('selected',+b.dataset.cols===cols))}
+document.querySelectorAll('[data-cols]').forEach(b=>b.onclick=()=>{cols=+b.dataset.cols;try{localStorage.setItem('poketracker-cols',cols)}catch{}applyCols()});
+applyCols();
 
 /* ---------- Événements ---------- */
 document.addEventListener('click',e=>{
