@@ -1,4 +1,4 @@
-const CACHE='poketracker-v36';
+const CACHE='poketracker-v37';
 const FILES=['./','./index.html','./styles.css','./styles-v23.css','./styles-pixel.css','./app.js','./catalog-data.js','./manifest.webmanifest','./icon.svg','./icon-180.png','./assets/pixel-mascot.png','./assets/pixel-canopy.png','./assets/tile-collection.webp','./assets/tile-pokedex.webp','./assets/tile-series.webp'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith('poketracker-')&&x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));

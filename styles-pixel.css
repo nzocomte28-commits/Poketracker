@@ -273,3 +273,26 @@ body.pixel-world .home-tile i{z-index:4!important}
 .pokedex-search-clear[hidden]{display:none!important}
 .single-owned-card{cursor:pointer}
 .single-owned-card [data-rm]{position:relative;z-index:3}
+
+
+/* PokéTracker V37 — visuels discrets, compteurs simples et cartes tarifables */
+body.pixel-world .home-tile{isolation:isolate;}
+body.pixel-world .home-tile .tile-copy{max-width:72%!important;z-index:2!important;}
+body.pixel-world .home-tile .tile-art-series{
+ width:25%!important;height:39%!important;left:42%!important;right:auto!important;bottom:7px!important;
+ object-fit:contain!important;object-position:center!important;transform:none!important;
+}
+body.pixel-world .home-tile .tile-art-pokedex{
+ width:24%!important;height:40%!important;left:43%!important;right:auto!important;bottom:7px!important;
+ object-fit:contain!important;object-position:center!important;mix-blend-mode:multiply;
+}
+body.pixel-world .home-tile .tile-art-collection{
+ width:22%!important;height:42%!important;left:43%!important;right:auto!important;bottom:7px!important;
+ object-fit:cover!important;object-position:center!important;border-radius:12px!important;
+ opacity:.9!important;mask-image:none!important;
+}
+body.pixel-world .home-tile i{z-index:5!important;}
+body.pixel-world #tilePokedex .tile-metric-sub{display:none!important;}
+body.pixel-world #tilePokedex .tile-copy>small{max-width:100%!important;}
+body.pixel-world #singleCardDialog .field{display:flex;flex-direction:column;gap:6px;margin:12px 0;font-weight:700;}
+body.pixel-world #singleCardDialog .field input{width:100%;min-height:42px;padding:9px 12px;border:1px solid #8acbb0;border-radius:10px;background:#f3fff7;color:#173b38;font-size:16px;}

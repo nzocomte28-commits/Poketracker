@@ -57,6 +57,8 @@ let cur='meg-fr',curBlock='mega',filter='all';
 let activePage='landing',setReturnPage='blockSetsPage',setReturnScroll=0;
 function show(id){pages.forEach(p=>$(p).hidden=p!==id);activePage=id;
  $('navMenu').classList.toggle('nav-active',id==='landing');
+ $('navSeries').classList.toggle('nav-active',['blocksPage','blockSetsPage','collection'].includes(id));
+ $('navShelf').classList.toggle('nav-active',id==='collectionShelf');
  $('navProfile').classList.toggle('nav-active',id==='statsPage');
  window.scrollTo(0,0)}
 function tile(k){const s=sets[k],t=totalN(k),n=ownedN(k),p=t?Math.round(n/t*100):0;
@@ -139,9 +141,9 @@ async function singleDetail(key){
  const i=key.indexOf(':'),k=key.slice(0,i),n=key.slice(i+1);if(!(await ensure(k)))return;
  const c=cardsOf(k).find(x=>x.number===n);if(!c)return;
  let d=$('singleCardDialog');if(!d){d=document.createElement('dialog');d.id='singleCardDialog';d.className='v23-dialog';document.body.appendChild(d)}
- const owned=db.singles.some(x=>x.id===key);
- d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE · POKÉDEX</b><button data-close aria-label="Retour au Pokédex">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc(sets[k]?.title||k)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd><dt>Évolution</dt><dd>${esc((Array.isArray(c.evolveFrom)?c.evolveFrom:[c.evolveFrom].filter(Boolean)).join(', ')||'—')}</dd></dl><button class="btn" data-dialog-add="${esc(key)}" ${owned?'disabled':''}>${owned?'Déjà dans mon Pokédex':'Ajouter à mon Pokédex +'}</button></div></div>`;
- d.querySelector('[data-close]').onclick=()=>d.close();const add=d.querySelector('[data-dialog-add]');if(add)add.onclick=()=>{add.disabled=true;addSingle(key).then(()=>{add.textContent='Ajoutée ✓'})};d.showModal();
+ const owned=db.singles.some(x=>x.id===key),p=db.prices[key]||{};
+ d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE · POKÉDEX</b><button data-close aria-label="Retour au Pokédex">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc(sets[k]?.title||k)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd><dt>Évolution</dt><dd>${esc((Array.isArray(c.evolveFrom)?c.evolveFrom:[c.evolveFrom].filter(Boolean)).join(', ')||'—')}</dd></dl><label class="field">Prix de ma carte (€)<input type="number" inputmode="decimal" min="0" step="0.01" id="singleCardPrice" value="${p.fr||''}" placeholder="Saisir un prix"></label><p class="muted">Tu peux renseigner ici le prix estimé ou la valeur à laquelle tu l’as achetée.</p><button class="btn" data-dialog-add="${esc(key)}" ${owned?'disabled':''}>${owned?'Déjà dans mon Pokédex':'Ajouter à mon Pokédex +'}</button></div></div>`;
+ d.querySelector('[data-close]').onclick=()=>d.close();const priceInput=d.querySelector('#singleCardPrice');priceInput.onchange=()=>{const v=Math.max(0,parseFloat(String(priceInput.value).replace(',','.'))||0);db.prices[key]=db.prices[key]||{};db.prices[key].fr=v;save();stats()};const add=d.querySelector('[data-dialog-add]');if(add)add.onclick=()=>{add.disabled=true;addSingle(key).then(()=>{add.textContent='Ajoutée ✓'})};d.showModal();
 }
 
 /* ---------- Statistiques, export / import ---------- */

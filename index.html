@@ -11,7 +11,7 @@
 <link rel="icon" href="icon.svg">
 <link rel="stylesheet" href="styles.css?v=31">
 <link rel="stylesheet" href="styles-v23.css?v=31">
-<link rel="stylesheet" href="styles-pixel.css?v=36">
+<link rel="stylesheet" href="styles-pixel.css?v=34">
 </head>
 <body class="pixel-world">
 <header class="topbar">
@@ -33,7 +33,7 @@
   <div class="home-grid">
     <button class="home-tile tile-series" id="tileSeries"><span class="tile-copy"><b>Séries</b><small>Explorer les extensions et leurs cartes</small></span><img class="tile-art tile-art-series" src="assets/tile-series.webp" alt="Pokémon Trading Card Game"><i>→</i></button>
     <button class="home-tile tile-collection" id="tileCollection"><span class="tile-copy"><b>Ma collection</b><small>Mes classeurs et Master Sets</small></span><img class="tile-art tile-art-collection" src="assets/tile-collection.webp" alt="Cartes Pokémon de ma collection"><i>→</i></button>
-    <button class="home-tile tile-pokedex" id="tilePokedex"><span class="tile-copy"><b>Mon Pokédex</b><small><strong id="pokedexOwnedCount">0</strong> cartes ajoutées <span class="tile-metric-sub">sur <strong id="pokedexTotalCount">…</strong> cartes du catalogue</span></small></span><img class="tile-art tile-art-pokedex" src="assets/tile-pokedex.webp" alt="Pokédex rouge"><i>→</i></button>
+    <button class="home-tile tile-pokedex" id="tilePokedex"><span class="tile-copy"><b>Mon Pokédex</b><small><strong id="pokedexOwnedCount">0</strong> cartes dans mon Pokédex</small></span><img class="tile-art tile-art-pokedex" src="assets/tile-pokedex.webp" alt="Pokédex rouge"><i>→</i></button>
     <button class="home-tile tile-stats" id="tileStats"><span class="tile-icon">▥</span><b>Statistiques</b><small>Vue d'ensemble de ma collection</small><i>→</i></button>
   </div>
   <section class="home-section pixel-series-section">
@@ -60,7 +60,7 @@
 <div id="searchOverlay" class="search-overlay" hidden><div class="search-panel"><button id="closeSearch" class="close-search">✕</button><p class="eyebrow">RECHERCHE RAPIDE</p><h2>Ajouter une carte à l'unité</h2><input id="globalSearch" class="searchbox" placeholder="Nom du Pokémon ou de la carte…"><div id="globalResults" class="single-results"></div></div></div>
 <footer>PokéTracker · Données stockées sur cet appareil.<br><small>Projet de fan, non affilié à Nintendo, Creatures, GAME FREAK ni The Pokémon Company. Données et images : TCGdex.</small></footer>
 <script src="catalog-data.js?v=34"></script>
-<script src="app.js?v=36"></script>
+<script src="app.js?v=34"></script>
 <script>
 (function(){
  const searchButton=document.getElementById('navSearch');
