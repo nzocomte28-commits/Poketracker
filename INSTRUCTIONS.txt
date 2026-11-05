@@ -1,0 +1,1 @@
+Remplace uniquement index.html dans ton dépôt par ce fichier. Ne touche pas à app.js, catalog-data.js ou sw.js. Le fichier index charge maintenant app.js puis v22-navigation.js. Ensuite recharge le site.
