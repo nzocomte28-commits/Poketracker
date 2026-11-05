@@ -54,17 +54,30 @@ function chips(b){const all=blockSets(b),cnt=l=>all.filter(k=>sets[k].lang===l).
 /* ---------- Navigation ---------- */
 const pages=['landing','blocksPage','blockSetsPage','collectionShelf','pokedexPage','statsPage','collection'];
 let cur='meg-fr',curBlock='mega',filter='all';
-function show(id){pages.forEach(p=>$(p).hidden=p!==id);$('navMenu').classList.toggle('nav-active',id==='landing');window.scrollTo(0,0)}
+let activePage='landing',setReturnPage='blockSetsPage',setReturnScroll=0;
+function show(id){pages.forEach(p=>$(p).hidden=p!==id);activePage=id;
+ $('navMenu').classList.toggle('nav-active',id==='landing');
+ $('navSeries').classList.toggle('nav-active',['blocksPage','blockSetsPage','collection'].includes(id));
+ $('navShelf').classList.toggle('nav-active',id==='collectionShelf');
+ $('navProfile').classList.toggle('nav-active',id==='statsPage');
+ window.scrollTo(0,0)}
 function tile(k){const s=sets[k],t=totalN(k),n=ownedN(k),p=t?Math.round(n/t*100):0;
  return `<button class="set-card tone-${toneOf(k)}${t&&n>=t?' is-complete':''}" data-set="${k}"><span class="set-stage">${imgTag(meta[k]?.logo,'set-logo',s.title)||`<span class="set-flag">${s.flag}</span>`}</span><span class="set-foot"><span class="set-text"><b>${esc(s.title)}</b><small>${s.flag} ${t?n+' / '+t:'Bientôt'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}
-function renderHome(){const ks=started();$('myCollections').innerHTML=ks.map(tile).join('');$('noCollections').hidden=ks.length>0}
+function renderHome(){const ks=started();$('myCollections').innerHTML=ks.map(tile).join('');$('noCollections').hidden=ks.length>0;
+ const total=Object.values(meta).reduce((n,x)=>n+(Number(x.count)||0),0)||Object.values(CAT).reduce((n,x)=>n+(Array.isArray(x)?x.length:0),0);
+ $('pokedexOwnedCount').textContent=db.singles.length.toLocaleString('fr-FR');
+ $('pokedexTotalCount').textContent=total?total.toLocaleString('fr-FR'):'…'}
 function openBlocks(){$('blocksGrid').innerHTML=blocks.map(b=>{const ks=blockSets(b),t=ks.reduce((a,k)=>a+totalN(k),0),n=ks.reduce((a,k)=>a+ownedN(k),0),p=t?Math.round(n/t*100):0;
  return `<button class="block-card tone-${b.tone}" data-block="${b.id}"><span class="block-stage">${imgTag(logoOf(b),'block-logo',b.name)||`<span class="block-name-big">${esc(b.name)}</span>`}</span><span class="block-foot"><span class="set-text"><b>${esc(b.name)}</b><small>${ks.length?ks.length+' séries · '+n.toLocaleString('fr-FR')+' / '+t.toLocaleString('fr-FR')+' cartes':'Catalogue à venir'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}).join('');show('blocksPage')}
 function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;curBlock=id;$('blockEyebrow').textContent='BLOC · '+b.name;$('blockTitle').innerHTML=imgTag(logoOf(b),'hero-logo',b.name)||esc(b.name);$('blockSetsPage').dataset.tone=b.tone;
  const ks=blockSets(b).filter(k=>sets[k].lang===langF);chips(b);$('blockSetsGrid').innerHTML=ks.length?ks.map(tile).join(''):'<p class="muted">Aucune série dans cette langue pour le moment.</p>';show('blockSetsPage')}
 function openShelf(){const ks=started();$('shelfList').innerHTML=ks.map(tile).join('');$('emptyShelf').hidden=ks.length>0;show('collectionShelf')}
-async function ensure(k){if(CAT[k])return true;try{const r=await fetch('catalog/sets/'+k+'.json');if(!r.ok)throw 0;CAT[k]=await r.json();delete cache[k];return true}catch{return false}}
-async function openSet(k){cur=k;filter='all';$('search').value='';
+const ensureJobs={};
+async function ensure(k){if(CAT[k])return true;if(ensureJobs[k])return ensureJobs[k];
+ ensureJobs[k]=(async()=>{try{const r=await fetch('catalog/sets/'+k+'.json');if(!r.ok)throw 0;CAT[k]=await r.json();delete cache[k];return true}catch{return false}finally{delete ensureJobs[k]}})();return ensureJobs[k]}
+async function openSet(k){setReturnPage=activePage==='collectionShelf'?'collectionShelf':'blockSetsPage';setReturnScroll=window.scrollY;
+ $('back').textContent=setReturnPage==='collectionShelf'?'← Retour à ma collection':'← Retour aux séries';
+ cur=k;filter='all';$('search').value='';
  document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('selected',b.dataset.filter==='all'));
  show('collection');const s=sets[k];$('setLabel').textContent=s.label;$('setTitle').textContent=s.title;$('setSubtitle').textContent=s.code;
  if(!CAT[k]){$('cards').hidden=false;$('cards').innerHTML='<p class="muted">Chargement des cartes…</p>';$('empty').hidden=true}
@@ -103,14 +116,30 @@ function detail(key){
 let SX=null;
 async function loadSearch(){if(SX)return SX;let a=null;try{const r=await fetch('catalog/search.json');if(r.ok)a=await r.json()}catch{}
  SX=(a||Object.keys(CAT).flatMap(k=>CAT[k].map(c=>[k,String(c.number),c.name]))).map(e=>({k:e[0],n:e[1],name:e[2],t:norm(e[2]+' '+e[1])}));return SX}
+function sameCardNumber(a,b){const x=String(a??''),y=String(b??'');return x===y||(/^\d+$/.test(x)&&/^\d+$/.test(y)&&Number(x)===Number(y))}
 async function search(q,target){
  q=norm(q.trim());const el=$(target);
  if(q.length<2){el.innerHTML='<p class="muted">Tape au moins 2 lettres.</p>';return}
  const res=(await loadSearch()).filter(x=>x.t.includes(q)).slice(0,40);
- el.innerHTML=res.map(x=>{const im=(CAT[x.k]||[]).find(c=>String(c.number)===x.n)?.image;return `<article class="single-card">${im?`<img src="${esc(im)}" alt="" loading="lazy" decoding="async">`:'<div class="single-placeholder">✦</div>'}<div><b>${esc(x.name)}</b><small>${esc(sets[x.k]?.title||x.k)} · ${esc(x.n)}</small><button data-add="${esc(x.k+':'+x.n)}">Ajouter à mon Pokédex +</button></div></article>`}).join('')||'<p class="muted">Aucun résultat.</p>'}
-async function addSingle(key){const i=key.indexOf(':'),k=key.slice(0,i),n=key.slice(i+1);
- if(db.singles.some(z=>z.id===key)||!(await ensure(k)))return;const c=cardsOf(k).find(x=>x.number===n);if(!c)return;
- db.singles.push({id:key,name:c.name,number:c.number,image:c.image||'',setName:sets[k]?.title||k});save();renderSingles();stats()}
+ // Charge les fiches des séries trouvées avant de chercher les images : le catalogue complet n'est pas préchargé.
+ await Promise.all([...new Set(res.map(x=>x.k))].map(ensure));
+ el.innerHTML=res.map(x=>{const c=cardsOf(x.k).find(c=>sameCardNumber(c.number,x.n));const id=x.k+':'+(c?.number||x.n);const im=c?.image;
+ const added=db.singles.some(z=>z.id===id);
+ return `<article class="single-card">${im?`<img src="${esc(im)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none';this.nextElementSibling.hidden=false">`:' '}<div class="single-placeholder" ${im?'hidden':''}>✦</div><div><b>${esc(x.name)}</b><small>${esc(sets[x.k]?.title||x.k)} · ${esc(c?.number||x.n)}</small><button data-add="${esc(id)}" ${added?'disabled':''}>${added?'Déjà dans mon Pokédex ✓':'Ajouter à mon Pokédex +'}</button></div></article>`}).join('')||'<p class="muted">Aucun résultat.</p>'}
+const singleAddLocks=new Set();
+async function addSingle(key,button){
+ if(singleAddLocks.has(key))return;singleAddLocks.add(key);
+ const original=button?.textContent||'Ajouter à mon Pokédex +';if(button){button.disabled=true;button.textContent='Ajout en cours…'}
+ try{const i=key.indexOf(':'),k=key.slice(0,i),n=key.slice(i+1);
+  if(!(await ensure(k)))throw new Error('catalogue');
+  const c=cardsOf(k).find(x=>sameCardNumber(x.number,n));if(!c)throw new Error('carte');
+  const id=k+':'+c.number;if(!db.singles.some(z=>z.id===id)){
+   db.singles.push({id,name:c.name,number:c.number,image:c.image||'',setName:sets[k]?.title||k});save();renderSingles();stats();renderHome();
+  }
+  if(button){button.textContent='Ajoutée ✓';button.disabled=true}
+ }catch(err){if(button){button.disabled=false;button.textContent='Réessayer'} }
+ finally{singleAddLocks.delete(key)}
+}
 function renderSingles(){
  $('singlesOwned').innerHTML=db.singles.map(x=>`<article class="single-card">${x.image?`<img src="${esc(x.image)}" alt="" loading="lazy">`:'<div class="single-placeholder">✦</div>'}<div><b>${esc(x.name)}</b><small>${esc(x.setName)} · ${esc(x.number)}</small><button data-rm="${esc(x.id)}">Retirer</button></div></article>`).join('');
  $('emptySingles').hidden=db.singles.length>0}
@@ -143,7 +172,7 @@ applyCols();
 /* ---------- Événements ---------- */
 document.addEventListener('click',e=>{
  const t=e.target.closest('[data-block],[data-set],[data-detail],[data-add],[data-rm],[data-home],[data-lang]');if(!t)return;const d=t.dataset;
- if(d.block)openBlock(d.block);else if(d.set)openSet(d.set);else if(d.detail)detail(d.detail);else if(d.add)addSingle(d.add);
+ if(d.block)openBlock(d.block);else if(d.set)openSet(d.set);else if(d.detail)detail(d.detail);else if(d.add){e.preventDefault();e.stopPropagation();addSingle(d.add,t);}
  else if(d.rm){db.singles=db.singles.filter(z=>z.id!==d.rm);save();renderSingles();stats()}
  else if(d.lang!==undefined){langF=d.lang;try{localStorage.setItem('poketracker-lang',langF)}catch{}openBlock(curBlock)}else{show('landing');renderHome()}});
 $('tileSeries').onclick=openBlocks;$('tileCollection').onclick=openShelf;
@@ -153,7 +182,7 @@ $('navSearch').onclick=()=>{$('searchOverlay').hidden=false;$('globalSearch').fo
 $('closeSearch').onclick=()=>$('searchOverlay').hidden=true;
 addEventListener('keydown',e=>{if(e.key==='Escape')$('searchOverlay').hidden=true});
 $('globalSearch').oninput=deb(e=>search(e.target.value,'globalResults'));$('singleSearch').oninput=deb(e=>search(e.target.value,'singleResults'));
-$('backBlocks').onclick=openBlocks;$('back').onclick=()=>openBlock(curBlock);
+$('backBlocks').onclick=openBlocks;$('back').onclick=()=>{show(setReturnPage);requestAnimationFrame(()=>window.scrollTo(0,setReturnScroll))};
 $('search').oninput=deb(render,100);$('rarityFilter').onchange=render;
 document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('selected',x===b));render()});
 if(!read(KEY))save();
