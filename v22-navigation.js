@@ -1,5 +1,4 @@
-
-/* V22 navigation layer — preserves KEY='poketracker-v2' and existing checklist data */
+/* PokéTracker V22 — couche de navigation, sauvegarde poketracker-v2 conservée */
 const v22Blocks=[
  {id:'mega',name:'Méga-Évolution',desc:'Les nouvelles aventures Méga',tone:'red',sets:['meg-fr','me02','me025','me03','me04','me05','mep','m1l-jp','m1s-jp','30-fr','30-jp']},
  {id:'sv',name:'Écarlate et Violet',desc:'L’ère Écarlate et Violet',tone:'violet',sets:[]},
@@ -22,10 +21,10 @@ function v22Singles(){if(!Array.isArray(db.singles))db.singles=[];$('singlesOwne
 function v22Stats(){const startedSets=Object.keys(sets).filter(k=>collectionCards(k).length>0);$('statOwned').textContent=db.cards.filter(c=>c.owned).length;$('statSets').textContent=startedSets.length;$('statSingles').textContent=(db.singles||[]).length;}
 document.addEventListener('click',e=>{
  const b=e.target.closest('[data-v22-block]');if(b)v22OpenBlock(b.dataset.v22Block);
- const s=e.target.closest('[data-v22-set]');if(s)openSet(s.dataset.v22Set);
+ const s=e.target.closest('[data-v22-set]');if(s){v22Show('collection');openSet(s.dataset.v22Set);}
  const add=e.target.closest('[data-add-single]');if(add){const [setKey,identifier]=add.dataset.addSingle.split('|');const found=v22CatalogMatches(identifier.toLowerCase()).find(x=>x.setKey===setKey);if(found){if(!Array.isArray(db.singles))db.singles=[];const c=found.c,id=setKey+'-'+(c.number||c.n||c.name);if(!db.singles.some(x=>x.id===id))db.singles.push({id,name:c.name||'Carte Pokémon',number:c.number||c.n||'',image:c.image||c.img||'',setName:sets[setKey]?.title||setKey});localStorage.setItem(KEY,JSON.stringify(db));v22Singles();v22Stats();}}
  const rem=e.target.closest('[data-remove-single]');if(rem){db.singles=(db.singles||[]).filter(x=>x.id!==rem.dataset.removeSingle);localStorage.setItem(KEY,JSON.stringify(db));v22Singles();v22Stats();}
- if(e.target.closest('[data-home]')){v22Show('landing');}
+ if(e.target.closest('[data-home]'))v22Show('landing');
 });
 $('tileSeries').addEventListener('click',v22OpenBlocks);
 $('tileCollection').addEventListener('click',v22OpenShelf);
@@ -38,7 +37,6 @@ $('globalSearch').addEventListener('input',e=>v22Search(e.target.value.trim(),'g
 $('singleSearch').addEventListener('input',e=>v22Search(e.target.value.trim(),'singleResults'));
 $('backBlocks').addEventListener('click',v22OpenBlocks);
 $('back').addEventListener('click',()=>v22OpenBlock(v22CurrentBlock));
-/* Replace the old landing actions with the V22 navigation. */
 $('exploreCollections').addEventListener('click',v22OpenBlocks);
 $('home').addEventListener('click',()=>v22Show('landing'));
 const v22OldRenderHome=renderHome;
