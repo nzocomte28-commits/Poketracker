@@ -1,0 +1,148 @@
+/* PokéTracker Pixel World — surcouche graphique accueil, responsive */
+:root{
+ --pw-green:#087d69;--pw-deep:#073e3c;--pw-red:#ef4050;
+ --pw-outline:#102c31;--pw-cream:#fff4f1;
+}
+html,body{min-height:100%;background:#087d69}
+body.pixel-world{
+ color:#122b36;
+ background:
+   radial-gradient(circle at 12% 20%,#d8f6a733 0 2px,transparent 3px),
+   radial-gradient(circle at 72% 46%,#d8f6a733 0 2px,transparent 3px),
+   radial-gradient(circle at 42% 78%,#d8f6a622 0 2px,transparent 3px),
+   linear-gradient(180deg,#137c69 0%,#53bd93 45%,#147d6a 100%);
+ background-size:47px 51px,63px 59px,71px 67px,auto;
+ padding-bottom:calc(112px + env(safe-area-inset-bottom));
+}
+body.pixel-world:before{
+ content:"";position:fixed;z-index:0;pointer-events:none;inset:0 0 auto;height:94px;
+ background:
+  linear-gradient(180deg,#062e2bd9,#0b4941a8 72%,transparent),
+  url("assets/pixel-canopy.png") center top/auto 120px repeat-x;
+ image-rendering:pixelated;opacity:.95;
+}
+.topbar{
+ position:relative!important;z-index:3!important;height:82px!important;
+ border:0!important;background:linear-gradient(180deg,#052c2bd9,#063e3799)!important;
+ backdrop-filter:blur(6px)!important;padding:0 20px!important;
+}
+.brand{gap:13px!important}
+.brand b{font-size:22px!important;font-weight:900!important;letter-spacing:-1px!important;text-shadow:2px 2px #14333a}
+.brand small{color:#e5f2e9!important;letter-spacing:3px!important}
+.brandball{width:42px!important;height:42px!important;box-shadow:0 3px 0 #092c32,0 0 0 2px #f5fff9!important}
+main{position:relative;z-index:1;max-width:760px!important;padding:18px 15px 45px!important}
+#landing.pixel-home{display:block}
+.pixel-hero{
+ position:relative;isolation:isolate;overflow:hidden;min-height:208px;
+ display:flex;align-items:center;padding:20px 18px;margin:4px 0 18px;
+ border:3px solid #f4e6dc;border-left-color:#ff5364;border-radius:18px 22px 18px 22px;
+ background:linear-gradient(105deg,#072f32f2 0%,#0a4744e8 58%,#0a4642a8 100%);
+ box-shadow:0 5px 0 #142e30,0 8px 20px #073d3244,inset 0 0 0 2px #ed4559;
+}
+.pixel-hero:before{
+ content:"";position:absolute;z-index:-1;right:20%;top:10%;width:130px;height:130px;border-radius:50%;
+ background:linear-gradient(#e63848 0 47%,#162f34 47% 54%,#eaf4e9 54%);
+ opacity:.25;box-shadow:0 0 0 5px #dce9dc22;
+}
+.pixel-hero-copy{position:relative;z-index:2;width:70%;max-width:460px}
+.pixel-hero .eyebrow{
+ display:inline-block;color:#ffe7df;background:#a92f45;border:2px solid #ff7380;
+ border-radius:7px;padding:4px 9px;margin:0 0 9px;font-size:9px;letter-spacing:1.3px;
+}
+.pixel-hero h1{font-family:ui-monospace,Menlo,monospace!important;font-size:clamp(23px,5vw,32px)!important;line-height:1.17!important;font-weight:900!important;color:#fff;margin:0 0 10px;text-shadow:2px 3px #132b34}
+.pixel-hero h1 span{color:#ff5361}
+.pixel-hero .muted{font-size:15px!important;color:#edf8ef!important;line-height:1.42;margin:0;max-width:390px}
+.pixel-mascot{
+ position:absolute;z-index:1;right:-10px;bottom:-9px;width:42%;max-width:275px;
+ height:100%;max-height:205px;object-fit:contain;object-position:center bottom;
+ image-rendering:pixelated;filter:drop-shadow(3px 5px 0 #183d37);
+}
+.home-grid{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:13px!important;margin:16px 0 28px!important;
+}
+.home-tile{
+ min-height:143px!important;position:relative;overflow:hidden;isolation:isolate;
+ display:flex!important;flex-direction:column;align-items:flex-start;text-align:left;
+ padding:15px!important;border:3px solid #f7f4eb!important;border-radius:16px!important;
+ box-shadow:0 5px 0 #173e44,0 8px 14px #073a3447,inset 0 0 0 2px #ffffff80!important;
+}
+.home-tile:before{
+ content:"";position:absolute;z-index:-1;right:-10px;top:10px;width:94px;height:94px;border-radius:50%;
+ background:linear-gradient(#e83f50 0 47%,#18353a 47% 54%,#f5f4ec 54%);opacity:.14;
+}
+.home-tile:after{content:"";position:absolute;right:12px;bottom:10px;width:65px;height:65px;border:0;border-radius:0;opacity:.13;background:linear-gradient(135deg,transparent 45%,#ffffff 46% 54%,transparent 55%)}
+.home-tile b{font-family:ui-monospace,Menlo,monospace!important;font-size:16px!important;font-weight:900;line-height:1.2!important;color:#172e3c;text-shadow:0 1px #fff8}
+.home-tile small{font-size:13px!important;color:#1c3440!important;line-height:1.25!important;max-width:85%}
+.home-tile i{
+ position:absolute;right:11px;bottom:11px;width:42px;height:34px;display:grid;place-items:center;
+ border:2px solid #ffffffc9;border-radius:10px;font-size:20px!important;font-weight:900;
+ color:#fff!important;background:#143c45a8;box-shadow:0 2px 0 #19323b;
+}
+.tile-icon{width:45px!important;height:39px!important;border:0!important;border-radius:9px!important;background:transparent!important;
+ font-size:31px!important;font-weight:900;display:grid;place-items:center;text-shadow:1px 2px #fff9}
+.tile-series{background:linear-gradient(135deg,#ffe5e6,#f8b9c2)!important;border-color:#fff2ed!important;box-shadow:0 5px 0 #b92d42,0 8px 14px #073a3447!important}
+.tile-series .tile-icon{color:#d62942!important}.tile-collection{background:linear-gradient(135deg,#e6f4ff,#9ed4ff)!important;border-color:#f5fbff!important;box-shadow:0 5px 0 #176ba7,0 8px 14px #073a3447!important}
+.tile-collection .tile-icon{color:#126db0!important}.tile-pokedex{background:linear-gradient(135deg,#f4eaff,#cdb9ff)!important;border-color:#fff!important;box-shadow:0 5px 0 #6942aa,0 8px 14px #073a3447!important}
+.tile-pokedex .tile-icon{color:#6e38b7!important}.tile-stats{background:linear-gradient(135deg,#e4ffef,#9ce8c7)!important;border-color:#f2fff5!important;box-shadow:0 5px 0 #148558,0 8px 14px #073a3447!important}
+.tile-stats .tile-icon{color:#087d50!important}
+.home-section{margin-top:26px!important;padding:0 1px}
+.section-head{display:flex;align-items:center;gap:9px;margin:0 0 12px}
+.section-head h2{font-family:ui-monospace,Menlo,monospace!important;font-size:18px!important;font-weight:900!important;color:#fff!important;text-shadow:2px 3px #153a41;margin:0!important}
+.pixel-section-ball{display:inline-grid;place-items:center;width:29px;height:29px;border-radius:50%;border:2px solid #fff;background:linear-gradient(#e83d4e 0 45%,#172f37 45% 55%,#fff 55%);color:transparent;box-shadow:0 2px 0 #14343a}
+#myCollections.sets-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+#myCollections .set-card{
+ border:3px solid #eff8ec!important;border-radius:13px!important;background:linear-gradient(145deg,#f6d7f1,#b9a6fa)!important;
+ box-shadow:0 4px 0 #244b53,0 7px 12px #063b3544!important;color:#162d3a!important;
+}
+#myCollections .set-stage{height:65px!important;background:transparent!important}
+#myCollections .set-logo{max-height:58px!important;max-width:90%!important}
+#myCollections .set-foot{padding:8px 9px!important}
+#myCollections .set-text b{font-family:ui-monospace,Menlo,monospace!important;font-size:12px!important;color:#142f3c}
+#myCollections .set-text small{font-size:11px!important;color:#31505b!important}
+#myCollections .ring{width:34px;height:34px;background:conic-gradient(#e93e50 calc(var(--p)*1%),#ffffffa8 0)}
+#myCollections .ring i{width:27px;height:27px;background:#f8edf0;color:#182e3b;font-size:9px}
+#noCollections{color:#f4fff5!important;background:#064e45a8;border:1px solid #b9f0d066;border-radius:12px;padding:12px}
+.bottom-nav.pixel-bottom-nav{
+ left:12px!important;right:12px!important;width:auto!important;transform:none!important;
+ display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px!important;
+ padding:8px 6px calc(8px + env(safe-area-inset-bottom))!important;
+ border:2px solid #effaf0!important;border-radius:30px!important;
+ background:linear-gradient(110deg,#062c30f2,#075148ed)!important;
+ box-shadow:0 5px 0 #082d37,0 8px 20px #042b2c88,inset 0 0 0 2px #ffffff22!important;
+}
+.bottom-nav.pixel-bottom-nav button{min-width:0!important;width:100%;gap:3px!important;color:#e7f4ed!important}
+.bottom-nav.pixel-bottom-nav button span{font-size:25px!important;line-height:1.1;color:#f3fff4}
+.bottom-nav.pixel-bottom-nav button small{font:600 10px ui-monospace,Menlo,monospace!important;color:inherit}
+.bottom-nav.pixel-bottom-nav button.nav-active{color:#ff6a75!important;text-shadow:0 0 9px #ff354b}
+.bottom-nav.pixel-bottom-nav button.nav-active span{color:#ff5363!important}
+body.pixel-world footer{color:#e4f6e9!important}
+body.pixel-world footer small{color:#d5eee0!important}
+body.pixel-world .back{color:#f3fff5}
+body.pixel-world #blockSetsPage,body.pixel-world #blocksPage,body.pixel-world #collectionShelf,body.pixel-world #pokedexPage,body.pixel-world #statsPage,body.pixel-world #collection{
+ color:#f6fff7;background:#0c5649e8;border:2px solid #e3f5e7;border-radius:18px;padding:17px;margin:0 0 20px;box-shadow:0 5px 0 #173d42;
+}
+body.pixel-world .master,body.pixel-world .stats-grid article,body.pixel-world .single-card,body.pixel-world .block-card{
+ background:#103c3b!important;border-color:#7ac9a4!important;color:#fff;
+}
+body.pixel-world .searchbox,body.pixel-world input,body.pixel-world select{background:#f5fff7!important;color:#14343a!important;border-color:#6bbf9a!important}
+body.pixel-world .muted{color:#e3f4e9!important}
+body.pixel-world .block-card,.pixel-world .set-card{box-shadow:0 4px 0 #143c43}
+@media(min-width:700px){
+ .pixel-hero{min-height:230px}.pixel-mascot{max-height:235px}
+ .home-tile{min-height:160px!important}
+}
+@media(max-width:420px){
+ main{padding:12px 11px 36px!important}
+ .pixel-hero{min-height:184px;padding:16px 13px;margin-bottom:14px}
+ .pixel-hero-copy{width:73%}
+ .pixel-hero h1{font-size:23px!important}
+ .pixel-hero .muted{font-size:13px!important}
+ .pixel-mascot{width:42%;right:-8px;max-height:170px}
+ .home-grid{gap:10px!important;margin:14px 0 24px!important}
+ .home-tile{min-height:134px!important;padding:11px!important}
+ .home-tile b{font-size:14px!important}
+ .home-tile small{font-size:11px!important}
+ .home-tile i{width:32px;height:28px;font-size:16px!important;right:7px;bottom:7px}
+ .section-head h2{font-size:16px!important}
+ #myCollections.sets-grid{grid-template-columns:1fr 1fr!important}
+}
