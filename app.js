@@ -18,7 +18,7 @@ const sets={
  'mep':S('Promos Méga-Évolution','PROMOS · FRANÇAIS','Promos françaises','🇫🇷','fr'),
  'm1l-jp':S('Mega Brave',JP,'M1L · édition japonaise','🇯🇵','jp'),'m1s-jp':S('Mega Symphonia',JP,'M1S · édition japonaise','🇯🇵','jp'),
  '30-fr':S('30 ans Pokémon','30E ANNIVERSAIRE · FRANÇAIS','30C · édition française','🇫🇷','fr'),'30-jp':S('30th Celebration','30E ANNIVERSAIRE · JAPONAIS','M6a · édition japonaise','🇯🇵','jp')};
-const mega=Object.keys(sets),meta={};
+const mega=Object.keys(sets),meta={},kids={},kidOf={};
 const T=(id,name,desc,tone,s=[])=>({id,name,desc,tone,sets:s});
 const blocks=[T('mega','Méga-Évolution','Les nouvelles aventures Méga','lime',mega),T('sv','Écarlate et Violet','L’ère Écarlate et Violet','violet'),T('swsh','Épée et Bouclier','L’ère Épée et Bouclier','pink'),T('sm','Soleil et Lune','L’ère Soleil et Lune','orange'),T('xy','XY','L’ère XY','red'),T('bw','Noir et Blanc','L’ère Noir et Blanc','slate'),T('older','Ères précédentes','Diamant et Perle, Platine et plus','gold')];
 
@@ -34,19 +34,16 @@ function migrate(){
 let db=read(KEY)||migrate();db={owned:{},prices:{},singles:[],...db};
 function save(push=true){if(push)db._t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(db))}catch{alert('Sauvegarde impossible : stockage plein ou bloqué par le navigateur. Exporte ta collection depuis Statistiques.')}if(push)pushSoon()}
 const cache={};
-const TG_PARENT={swsh9tg:'swsh9',swsh10tg:'swsh10',swsh11tg:'swsh11',swsh12tg:'swsh12',swsh45sv:'swsh45',cel25cc:'cel25',swsh125gg:'swsh125'};
-const TG_CHILDREN=Object.fromEntries(Object.entries(TG_PARENT).map(([child,parent])=>[parent,child]));
-const isGallery=k=>Object.prototype.hasOwnProperty.call(TG_PARENT,k);
-const cardsOf=k=>cache[k]||(cache[k]=(CAT[k]||[]).map(c=>{const source=c._sourceSet||k;return {...c,key:source+':'+(c.number??''),number:String(c.number??'')}}));
+const cardsOf=k=>cache[k]||(cache[k]=[k,...(kids[k]||[])].flatMap(s=>(CAT[s]||[]).map(c=>({...c,key:s+':'+(c.number??''),number:String(c.number??'')}))));
 const isOwned=c=>!!db.owned[c.key];
 const price=c=>db.prices[c.key]||{};
 const deal=c=>{const p=price(c);return p.t>0&&p.fr>0&&p.fr<=p.t};
-const ownedN=k=>{const child=TG_CHILDREN[k];return Object.keys(db.owned).filter(x=>x.startsWith(k+':')||(child&&x.startsWith(child+':'))).length};
-const totalN=k=>{const child=TG_CHILDREN[k];if(child&&CAT[k]&&CAT[child])return CAT[k].length;return (CAT[k]?.length||meta[k]?.count||0)+(child?(meta[child]?.count||CAT[child]?.length||0):0)};
-const started=()=>Object.keys(sets).filter(k=>ownedN(k)>0);
+const ownedN=k=>{const g=[k,...(kids[k]||[])];return Object.keys(db.owned).filter(x=>g.some(s=>x.startsWith(s+':'))).length};
+const totalN=k=>[k,...(kids[k]||[])].reduce((n,s)=>n+((CAT[s]?.length)||meta[s]?.count||0),0);
+const started=()=>Object.keys(sets).filter(k=>!kidOf[k]&&ownedN(k)>0);
 const SB={me:'mega',m:'mega',sv:'sv',swsh:'swsh',s:'swsh',sm:'sm',xy:'xy',bw:'bw'};
 const blockOf=k=>mega.includes(k)?'mega':(SB[String(meta[k]?.serie||'').toLowerCase()]||'older');
-const blockSets=b=>Object.keys(sets).filter(k=>blockOf(k)===b.id&&!isGallery(k));
+const blockSets=b=>Object.keys(sets).filter(k=>!kidOf[k]&&blockOf(k)===b.id);
 const SL={};let langF=(()=>{try{return localStorage.getItem('poketracker-lang')}catch{return null}})()==='jp'?'jp':'fr';
 const toneOf=k=>(blocks.find(b=>b.id===blockOf(k))||{}).tone||'slate';
 const BLOCK_BASE={mega:'meg-fr',sv:'sv01',swsh:'swsh1',sm:'sm1',xy:'xy1',bw:'bw1',older:'base1'};
@@ -63,8 +60,6 @@ let cur='meg-fr',curBlock='mega',filter='all';
 let activePage='landing',setReturnPage='blockSetsPage',setReturnScroll=0;
 function show(id){pages.forEach(p=>$(p).hidden=p!==id);activePage=id;
  $('navMenu').classList.toggle('nav-active',id==='landing');
- $('navSeries').classList.toggle('nav-active',['blocksPage','blockSetsPage','collection'].includes(id));
- $('navShelf').classList.toggle('nav-active',id==='collectionShelf');
  $('navProfile').classList.toggle('nav-active',id==='statsPage');
  window.scrollTo(0,0)}
 function tile(k){const s=sets[k],t=totalN(k),n=ownedN(k),p=t?Math.round(n/t*100):0;
@@ -79,20 +74,15 @@ function openBlock(id){const b=blocks.find(x=>x.id===id);if(!b)return;curBlock=i
  const ks=blockSets(b).filter(k=>sets[k].lang===langF);chips(b);$('blockSetsGrid').innerHTML=ks.length?ks.map(tile).join(''):'<p class="muted">Aucune série dans cette langue pour le moment.</p>';show('blockSetsPage')}
 function openShelf(){const ks=started();$('shelfList').innerHTML=ks.map(tile).join('');$('emptyShelf').hidden=ks.length>0;show('collectionShelf')}
 const ensureJobs={};
-async function ensure(k){if(ensureJobs[k])return ensureJobs[k];
- ensureJobs[k]=(async()=>{try{
-  if(!CAT[k]){const r=await fetch('catalog/sets/'+k+'.json');if(!r.ok)throw 0;CAT[k]=await r.json()}
-  const child=TG_CHILDREN[k];
-  if(child&&!CAT[child]){try{const r=await fetch('catalog/sets/'+child+'.json');if(r.ok)CAT[child]=(await r.json()).map(c=>({...c,_sourceSet:child}))}catch{}}
-  if(child&&CAT[child]){const base=CAT[k].filter(c=>c._sourceSet!==child);CAT[k]=base.concat(CAT[child]);}
-  delete cache[k];return true
- }catch{return false}finally{delete ensureJobs[k]}})();return ensureJobs[k]}
+async function ensure(k){return(await Promise.all([k,...(kids[k]||[])].map(ensureOne))).every(Boolean)}
+async function ensureOne(k){if(CAT[k])return true;if(ensureJobs[k])return ensureJobs[k];
+ ensureJobs[k]=(async()=>{try{const r=await fetch('catalog/sets/'+k+'.json');if(!r.ok)throw 0;CAT[k]=await r.json();delete cache[k];delete cache[kidOf[k]];return true}catch{return false}finally{delete ensureJobs[k]}})();return ensureJobs[k]}
 async function openSet(k){setReturnPage=activePage==='collectionShelf'?'collectionShelf':'blockSetsPage';setReturnScroll=window.scrollY;
  $('back').textContent=setReturnPage==='collectionShelf'?'← Retour à ma collection':'← Retour aux séries';
  cur=k;filter='all';$('search').value='';
  document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('selected',b.dataset.filter==='all'));
  show('collection');const s=sets[k];$('setLabel').textContent=s.label;$('setTitle').textContent=s.title;$('setSubtitle').textContent=s.code;
- if(!CAT[k]){$('cards').hidden=false;$('cards').innerHTML='<p class="muted">Chargement des cartes…</p>';$('empty').hidden=true}
+ if(!CAT[k]||(kids[k]||[]).some(s=>!CAT[s])){$('cards').hidden=false;$('cards').innerHTML='<p class="muted">Chargement des cartes…</p>';$('empty').hidden=true}
  const ok=await ensure(k);if(cur!==k)return;
  if(!ok){const soon=!meta[k];$('cards').innerHTML=soon?'':'<p class="muted">Catalogue indisponible. Vérifie ta connexion.</p>';$('empty').hidden=!soon;return}
  const r=[...new Set(cardsOf(k).map(c=>c.rarity).filter(Boolean))];
@@ -101,11 +91,7 @@ async function openSet(k){setReturnPage=activePage==='collectionShelf'?'collecti
 /* ---------- Album ---------- */
 function render(){
  const s=sets[cur],all=cardsOf(cur),q=norm($('search').value),r=$('rarityFilter').value;
- const shown=(filter==='all'&&!q&&!r)?all:all.filter(c=>{
-  const matchesFilter=filter==='all'||(filter==='owned'?isOwned(c):!isOwned(c));
-  const matchesText=!q||norm([c.name,c.number,c.rarity,c.category].join(' ')).includes(q);
-  return matchesFilter&&matchesText&&(!r||c.rarity===r);
- });
+ const shown=all.filter(c=>(filter==='all'||(filter==='owned')===isOwned(c))&&(!r||c.rarity===r)&&norm([c.name,c.number,c.rarity,c.category].join(' ')).includes(q));
  let v=0,rem=0,vj=0,rj=0;for(const c of all){const p=price(c),x=priceOf(c.key);if(isOwned(c)){v+=x;vj+=p.jp||0}else{rem+=x;rj+=p.jp||0}}
  const n=all.filter(isOwned).length,pc=all.length?Math.round(n/all.length*100):0;
  $('setLabel').textContent=s.label;$('setTitle').textContent=s.title;$('setSubtitle').textContent=s.code;
@@ -113,7 +99,7 @@ function render(){
  $('value').textContent=v?eur(v):'—';$('remain').textContent=rem?eur(rem):'—';
  $('valueJP').textContent=vj?jpy(vj)+(fxRate?' · ≈ '+jpyEUR(vj):''):'—';$('remainJP').textContent=rj?jpy(rj)+(fxRate?' · ≈ '+jpyEUR(rj):''):'—';
  $('valueJPWrap').hidden=$('remainJPWrap').hidden=s.lang!=='jp';
- $('cards').classList.add('album-grid');$('cards').style.display='grid';
+ $('cards').classList.add('album-grid');
  $('cards').innerHTML=shown.map(c=>`<button class="album-card ${isOwned(c)?'is-owned':'is-missing'}" data-detail="${esc(c.key)}"><span class="album-art">${c.image?`<img loading="lazy" decoding="async" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<span class="album-no-image">✦</span>'}</span><span class="album-number">#${esc(c.number)}</span><span class="album-name">${esc(c.name)}</span>${deal(c)?'<span class="deal" title="Sous ton prix cible">🎯</span>':''}</button>`).join('');
  $('cards').hidden=!shown.length;$('empty').hidden=all.length>0;
  if(all.length&&!shown.length){$('cards').hidden=false;$('cards').innerHTML='<p class="meta">Aucun résultat.</p>'}}
@@ -122,7 +108,7 @@ function detail(key){
  let d=$('cardDialog');if(!d){d=document.createElement('dialog');d.id='cardDialog';d.className='v23-dialog';document.body.appendChild(d)}
  const f=(k,l,v)=>`<label class="field">${l}<input type="number" inputmode="decimal" min="0" step="any" data-p="${k}" value="${v||''}" placeholder="—"></label>`;
  const vr=Object.keys(c.variants||{}).filter(x=>c.variants[x]===true).join(', ');
- d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE</b><button data-close aria-label="Fermer">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc(s.title)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd>${vr?`<dt>Variantes</dt><dd>${esc(vr)}</dd>`:''}</dl>${priceBlock(key)}<label class="v23-own-toggle"><input id="v23Own" type="checkbox" ${isOwned(c)?'checked':''}> Je possède cette carte</label><div class="fields">${f('fr','Mon prix observé (€)',p.fr)}${s.lang==='jp'?f('jp','Prix observé (¥)',p.jp)+`<small class="muted" id="jpEuroEstimate">Équivalent : ${p.jp?jpyEUR(p.jp):'—'}</small>`:''}${f('t','Prix cible (€)',p.t)}</div>${s.lang==='fr'?`<a class="btn fiche-link" target="_blank" rel="noopener" href="https://www.cardmarket.com/fr/Pokemon/Products/Singles?searchString=${encodeURIComponent(c.name)}">Voir sur Cardmarket</a>`:''}</div></div>`;
+ d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE</b><button data-close aria-label="Fermer">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc((sets[keySet(key)]||s).title)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd>${vr?`<dt>Variantes</dt><dd>${esc(vr)}</dd>`:''}</dl>${priceBlock(key)}<label class="v23-own-toggle"><input id="v23Own" type="checkbox" ${isOwned(c)?'checked':''}> Je possède cette carte</label><div class="fields">${f('fr','Mon prix observé (€)',p.fr)}${s.lang==='jp'?f('jp','Prix observé (¥)',p.jp)+`<small class="muted" id="jpEuroEstimate">Équivalent : ${p.jp?jpyEUR(p.jp):'—'}</small>`:''}${f('t','Prix cible (€)',p.t)}</div>${s.lang==='fr'?`<a class="btn fiche-link" target="_blank" rel="noopener" href="https://www.cardmarket.com/fr/Pokemon/Products/Singles?searchString=${encodeURIComponent(c.name)}">Voir sur Cardmarket</a>`:''}</div></div>`;
  d.onchange=e=>{const t=e.target;
   if(t.id==='v23Own'){t.checked?db.owned[key]=1:delete db.owned[key]}
   else if(t.dataset.p){const o=db.prices[key]=db.prices[key]||{};o[t.dataset.p]=Math.max(0,parseFloat(String(t.value).replace(',','.'))||0);if(t.dataset.p==='jp'&&$('jpEuroEstimate'))$('jpEuroEstimate').textContent='Équivalent : '+(o.jp?jpyEUR(o.jp):'—')}
@@ -297,6 +283,8 @@ async function refreshFx(){try{const r=await fetch('https://api.frankfurter.app/
  for(const s of x.series||[])if(s.logo)SL[s.id]=s.logo;
  for(const e of x.sets||[]){meta[e.key]={serie:e.serie,count:e.count,id:e.id,lang:e.lang,logo:e.logo||`https://assets.tcgdex.net/${e.lang}/${e.serie}/${e.id}/logo`};if(e.lang==='ja'&&JPN[e.id]&&sets[e.key])sets[e.key].title=JPN[e.id];if(sets[e.key])continue;
   const fr=e.lang!=='ja';sets[e.key]={title:(e.lang==='ja'&&JPN[e.id])||e.name,label:'BLOC · '+String(e.serie).toUpperCase()+(fr?' · FRANÇAIS':' · JAPONAIS'),code:e.id+(fr?' · édition française':' · édition japonaise'),flag:fr?'🇫🇷':'🇯🇵',lang:fr?'fr':'jp'}}
+ const byId={};for(const e of x.sets||[])byId[e.lang+':'+e.id]=e;
+ for(const e of x.sets||[]){const m=e.id.match(/^(.+?)(tg|gg|cc|sv)$/i),pid=e.id==='sma'?'sm11.5':m&&m[1],p=pid&&byId[e.lang+':'+pid];if(p&&p.key!==e.key){(kids[p.key]=kids[p.key]||[]).push(e.key);kidOf[e.key]=p.key}}
  if(meta['30th'])delete sets['30-fr'];if(meta['m6a-jp'])delete sets['30-jp'];
  renderHome()}catch{}})();
 renderHome();show('landing');
