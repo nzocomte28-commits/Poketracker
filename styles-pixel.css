@@ -323,3 +323,7 @@ body.pixel-world #cardDialog .field input{width:100%;min-height:42px;padding:9px
  box-sizing:border-box!important;
 }
 .bottom-nav.pixel-bottom-nav button{min-width:0!important;width:100%!important;padding:2px 0!important}
+
+/* PokéTracker V41 — liens de vérification Cardmarket / eBay */
+.market-links{display:grid;gap:8px;margin-top:4px}
+.market-links .btn{display:block;text-align:center;text-decoration:none}

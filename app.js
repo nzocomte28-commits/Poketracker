@@ -1,4 +1,4 @@
-/* PokéTracker V40 — prix Cardmarket, fiches complètes, synchronisation Supabase, noms anglais pour le japonais.
+/* PokéTracker V41 — prix Cardmarket, fiches complètes, synchronisation Supabase, noms anglais pour le japonais.
    Sauvegarde conservée : poketracker-v3. */
 'use strict';
 const KEY='poketracker-v3',OLD='poketracker-v2',CAT=window.CATALOG||{};
@@ -108,7 +108,7 @@ function detail(key){
  let d=$('cardDialog');if(!d){d=document.createElement('dialog');d.id='cardDialog';d.className='v23-dialog';document.body.appendChild(d)}
  const f=(k,l,v)=>`<label class="field">${l}<input type="number" inputmode="decimal" min="0" step="any" data-p="${k}" value="${v||''}" placeholder="—"></label>`;
  const vr=Object.keys(c.variants||{}).filter(x=>c.variants[x]===true).join(', ');
- d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE</b><button data-close aria-label="Fermer">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc((sets[keySet(key)]||s).title)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd>${vr?`<dt>Variantes</dt><dd>${esc(vr)}</dd>`:''}</dl>${priceBlock(key)}<label class="v23-own-toggle"><input id="v23Own" type="checkbox" ${isOwned(c)?'checked':''}> Je possède cette carte</label><div class="fields">${f('fr','Mon prix observé (€)',p.fr)}${s.lang==='jp'?f('jp','Prix observé (¥)',p.jp)+`<small class="muted" id="jpEuroEstimate">Équivalent : ${p.jp?jpyEUR(p.jp):'—'}</small>`:''}${f('t','Prix cible (€)',p.t)}</div>${s.lang==='fr'?`<a class="btn fiche-link" target="_blank" rel="noopener" href="https://www.cardmarket.com/fr/Pokemon/Products/Singles?searchString=${encodeURIComponent(c.name)}">Voir sur Cardmarket</a>`:''}</div></div>`;
+ d.innerHTML=`<div class="v23-dialog-head"><b>FICHE CARTE</b><button data-close aria-label="Fermer">✕</button></div><div class="v23-detail-body">${c.image?`<img class="v23-detail-image" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<div class="v23-detail-placeholder">✦</div>'}<div class="v23-detail-info"><h2>${esc(c.name)}</h2><p>${esc((sets[keySet(key)]||s).title)} · ${esc(c.number)}</p><dl><dt>Rareté</dt><dd>${esc(c.rarity||'Non renseignée')}</dd><dt>Type</dt><dd>${esc((c.types||[]).join(', ')||c.category||'—')}</dd><dt>PV</dt><dd>${esc(c.hp||'—')}</dd><dt>Illustrateur</dt><dd>${esc(c.illustrator||'Non renseigné')}</dd>${vr?`<dt>Variantes</dt><dd>${esc(vr)}</dd>`:''}</dl>${priceBlock(key)}<label class="v23-own-toggle"><input id="v23Own" type="checkbox" ${isOwned(c)?'checked':''}> Je possède cette carte</label><div class="fields">${f('fr','Mon prix observé (€)',p.fr)}${s.lang==='jp'?f('jp','Prix observé (¥)',p.jp)+`<small class="muted" id="jpEuroEstimate">Équivalent : ${p.jp?jpyEUR(p.jp):'—'}</small>`:''}${f('t','Prix cible (€)',p.t)}</div></div></div>`;
  d.onchange=e=>{const t=e.target;
   if(t.id==='v23Own'){t.checked?db.owned[key]=1:delete db.owned[key]}
   else if(t.dataset.p){const o=db.prices[key]=db.prices[key]||{};o[t.dataset.p]=Math.max(0,parseFloat(String(t.value).replace(',','.'))||0);if(t.dataset.p==='jp'&&$('jpEuroEstimate'))$('jpEuroEstimate').textContent='Équivalent : '+(o.jp?jpyEUR(o.jp):'—')}
@@ -200,15 +200,19 @@ const chg=v=>v==null?'—':`<b class="${v>=0?'up':'down'}">${v>=0?'+':''}${v} %<
 function spark(a){if(a.length<2)return'';const mn=Math.min(...a),mx=Math.max(...a),r=mx-mn||1,w=260,h=56;
  const pts=a.map((v,i)=>`${(i/(a.length-1)*w).toFixed(1)},${(h-4-(v-mn)/r*(h-8)).toFixed(1)}`).join(' ');
  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`}
+const cardByKey=key=>{const k=keySet(key),n=key.slice(k.length+1);return(CAT[k]||[]).find(c=>String(c.number)===n)};
+function marketLinks(key){const c=cardByKey(key);if(!c)return'';
+ const q=encodeURIComponent((c.name+' '+String(c.number).replace(/^0+(?=\d)/,'')).trim()),fr=sets[keySet(key)]?.lang!=='jp';
+ return `<div class="market-links">${fr?`<a class="btn" target="_blank" rel="noopener" href="https://www.cardmarket.com/fr/Pokemon/Products/Singles?searchString=${q}">Vérifier sur Cardmarket ↗</a>`:''}<a class="btn" target="_blank" rel="noopener" href="https://www.ebay.fr/sch/i.html?_nkw=${q}&LH_Sold=1&LH_Complete=1">Ventes eBay terminées ↗</a></div>`}
 function priceBlock(key){
- if(sets[keySet(key)]?.lang==='jp')return '<div class="pricebox"><h3>Prix du marché</h3><p class="muted">Pas de prix automatique pour les cartes japonaises : saisis ton prix en ¥, il est converti en € au taux du jour.</p></div>';
- return '<div class="pricebox"><h3>Prix du marché · Cardmarket</h3><div id="priceBody">Chargement…</div></div>'}
+ if(sets[keySet(key)]?.lang==='jp')return '<div class="pricebox"><h3>Prix du marché</h3><p class="muted">Pas de prix automatique pour les cartes japonaises : saisis ton prix en ¥, il est converti en € au taux du jour.</p>'+marketLinks(key)+'</div>';
+ return '<div class="pricebox"><h3>Prix du marché · Cardmarket</h3><div id="priceBody">Chargement…</div>'+marketLinks(key)+'</div>'}
 async function fillPrice(key,force){
  if(!$('priceBody'))return;const e=await fetchPrice(key,force),el=$('priceBody');if(!el)return;
  if(!e){el.innerHTML='Prix indisponible (connexion ou service). <button class="btn" data-refresh-price="'+esc(key)+'">Réessayer</button>';return}
  if(e.none){el.textContent='Aucun prix Cardmarket pour cette carte.';return}
  const h=hist[key]||[],pts=[e.avg30,e.avg7,e.avg1,e.eur].filter(v=>v>=0);
- el.innerHTML=`<div class="price-main"><strong>${eur(e.eur)}</strong><small>tendance${e.low!=null?' · dès '+eur(e.low):''}</small></div><div class="price-chg"><span>24 h ${chg(pct(e.avg1,e.avg7))}</span><span>7 j ${chg(pct(e.eur,e.avg7))}</span><span>30 j ${chg(pct(e.eur,e.avg30))}</span></div>${spark(h.length>1?h.map(x=>x[1]):pts)}<small class="muted">${h.length>1?'Historique suivi sur cet appareil ('+h.length+' relevés)':'Courbe : moyennes 30 j, 7 j, 24 h puis tendance'} · mis à jour le ${esc(String(e.u||e.d).slice(0,10))}</small>${e.holo?`<small>Variante holo / reverse : ${eur(e.holo)}</small>`:''}<button class="btn" data-refresh-price="${esc(key)}">Actualiser</button>`}
+ el.innerHTML=`<div class="price-main"><strong>${eur(e.eur)}</strong><small>tendance${e.low!=null?' · prix le plus bas '+eur(e.low):''}</small></div><div class="price-chg"><span>24 h ${chg(pct(e.avg1,e.avg7))}</span><span>7 j ${chg(pct(e.eur,e.avg7))}</span><span>30 j ${chg(pct(e.eur,e.avg30))}</span></div>${spark(h.length>1?h.map(x=>x[1]):pts)}<small class="muted">${h.length>1?'Historique suivi sur cet appareil ('+h.length+' relevés)':'Courbe : moyennes 30 j, 7 j, 24 h puis tendance'} · Source : Cardmarket (via TCGdex), mis à jour le ${esc(String(e.u||e.d).slice(0,10))}</small>${e.holo?`<small>Variante holo / reverse : ${eur(e.holo)}</small>`:''}<button class="btn" data-refresh-price="${esc(key)}">Actualiser</button>`}
 
 /* ---------- Compte et synchronisation (Supabase, optionnel) ---------- */
 const CFG=window.POKETRACKER_CONFIG||{},cloudOn=!!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY);
