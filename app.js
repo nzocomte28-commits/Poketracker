@@ -1,4 +1,4 @@
-/* PokéTracker V42 — prix Cardmarket, fiches complètes, synchronisation Supabase, noms anglais pour le japonais.
+/* PokéTracker V43 — prix Cardmarket, fiches complètes, synchronisation Supabase, noms anglais pour le japonais.
    Sauvegarde conservée : poketracker-v3. */
 'use strict';
 const KEY='poketracker-v3',OLD='poketracker-v2',CAT=window.CATALOG||{};
@@ -307,7 +307,7 @@ async function refreshFx(){try{const r=await fetch('https://api.frankfurter.app/
  for(const e of x.sets||[]){meta[e.key]={serie:e.serie,count:e.count,id:e.id,lang:e.lang,cover:e.cover||'',logo:e.logo||`https://assets.tcgdex.net/${e.lang}/${e.serie}/${e.id}/logo`};if(e.lang==='ja'&&JPN[e.id]&&sets[e.key])sets[e.key].title=JPN[e.id];if(sets[e.key])continue;
   const fr=e.lang!=='ja';sets[e.key]={title:(e.lang==='ja'&&JPN[e.id])||e.name,label:'BLOC · '+String(e.serie).toUpperCase()+(fr?' · FRANÇAIS':' · JAPONAIS'),code:e.id+(fr?' · édition française':' · édition japonaise'),flag:fr?'🇫🇷':'🇯🇵',lang:fr?'fr':'jp'}}
  const byId={};for(const e of x.sets||[])byId[e.lang+':'+e.id]=e;
- for(const e of x.sets||[]){const m=e.id.match(/^(.+?)(tg|gg|cc|sv)$/i),pid=e.id==='sma'?'sm11.5':m&&m[1],p=pid&&byId[e.lang+':'+pid];if(p&&p.key!==e.key){(kids[p.key]=kids[p.key]||[]).push(e.key);kidOf[e.key]=p.key}}
+ for(const e of x.sets||[]){const m=e.id.match(/^(.+?)(tg|gg|cc|sv)$/i),pid=({sma:'sm115',exu:'ex10','30th-c':'30th'})[e.id]||(m&&m[1]),p=pid&&byId[e.lang+':'+pid];if(p&&p.key!==e.key){(kids[p.key]=kids[p.key]||[]).push(e.key);kidOf[e.key]=p.key}}
  if(meta['30th'])delete sets['30-fr'];if(meta['m6a-jp'])delete sets['30-jp'];
  renderHome()}catch{}})();
 renderHome();show('landing');
