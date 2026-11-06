@@ -66,7 +66,7 @@ for (const lang of LANGS) {
         }
       }
       if (!cards) { failed.push(`${lang}/${b.id}`); continue; }
-      index.push({key, lang, serie: s.id, id: b.id, name: b.name, count: cards.length, logo: b.logo || ''});
+      index.push({key, lang, serie: s.id, id: b.id, name: b.name, count: cards.length, logo: b.logo || '', cover: (cards.find(c => c.image) || {}).image || ''});
       for (const c of cards) search.push([key, c.number, c.name]);
       console.log(`✔ ${key} (${cards.length})`);
     }
