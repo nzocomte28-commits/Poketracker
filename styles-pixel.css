@@ -327,3 +327,11 @@ body.pixel-world #cardDialog .field input{width:100%;min-height:42px;padding:9px
 /* PokéTracker V41 — liens de vérification Cardmarket / eBay */
 .market-links{display:grid;gap:8px;margin-top:4px}
 .market-links .btn{display:block;text-align:center;text-decoration:none}
+
+/* PokéTracker V42 */
+.price-table{width:100%;border-collapse:collapse;font-size:13px}.price-table td{padding:5px 0;border-bottom:1px solid #2f6f6255}.price-table td:nth-child(2){text-align:right;font-weight:700}.price-table td:nth-child(3){text-align:right;width:70px}
+.album-card{position:relative;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}.album-card img{pointer-events:none;-webkit-user-drag:none}
+.info-dot{position:absolute;top:2px;right:2px;z-index:2;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:#000a;color:#fff;font-size:13px;line-height:1}
+#cards.compact .info-dot{display:none}.deal{right:auto!important;left:2px!important}
+.set-cover{max-height:72px;max-width:56%;object-fit:contain;border-radius:5px;box-shadow:0 3px 10px #0009}
+#tapNote{font-size:12px}

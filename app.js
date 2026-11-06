@@ -1,4 +1,4 @@
-/* PokéTracker V41 — prix Cardmarket, fiches complètes, synchronisation Supabase, noms anglais pour le japonais.
+/* PokéTracker V42 — prix Cardmarket, fiches complètes, synchronisation Supabase, noms anglais pour le japonais.
    Sauvegarde conservée : poketracker-v3. */
 'use strict';
 const KEY='poketracker-v3',OLD='poketracker-v2',CAT=window.CATALOG||{};
@@ -49,8 +49,9 @@ const toneOf=k=>(blocks.find(b=>b.id===blockOf(k))||{}).tone||'slate';
 const BLOCK_BASE={mega:'meg-fr',sv:'sv01',swsh:'swsh1',sm:'sm1',xy:'xy1',bw:'bw1',older:'base1'};
 const logoOf=b=>meta[BLOCK_BASE[b.id]]?.logo||SL[b.id==='mega'?'me':b.id]||'';
 const codeOf=k=>meta[k]?.id||String(sets[k].code).split(' ·')[0];
-const imgTag=(u,c,alt='',fb='',fbc='set-codebig')=>u?`<img class="${c}" src="${esc(u)}.webp" alt="${esc(alt)}" loading="lazy" decoding="async" data-fb="${esc(fb)}" data-fbc="${fbc}">`:'';
-addEventListener('error',e=>{const i=e.target;if(i&&i.tagName==='IMG'&&i.dataset.fbc){const s=document.createElement('span');s.className=i.dataset.fbc;s.textContent=i.dataset.fb||'';i.replaceWith(s)}},true);
+const imgTag=(u,c,alt='',fb='',fbc='set-codebig',cover='')=>u?`<img class="${c}" src="${esc(u)}.webp" alt="${esc(alt)}" loading="lazy" decoding="async" data-fb="${esc(fb)}" data-fbc="${fbc}" data-cover="${esc(cover)}">`:'';
+addEventListener('error',e=>{const i=e.target;if(i&&i.tagName==='IMG'&&i.dataset.cover){const c=document.createElement('img');c.className='set-cover';c.src=i.dataset.cover;c.alt='';c.loading='lazy';i.replaceWith(c);return}
+ if(i&&i.tagName==='IMG'&&i.dataset.fbc){const s=document.createElement('span');s.className=i.dataset.fbc;s.textContent=i.dataset.fb||'';i.replaceWith(s)}},true);
 function chips(b){const all=blockSets(b),cnt=l=>all.filter(k=>sets[k].lang===l).length;let c=$('langChips');if(!c){c=document.createElement('div');c.id='langChips';c.className='seg';$('blockSetsGrid').before(c)}
  c.innerHTML=[['fr','🇫🇷 Français · '+cnt('fr')],['jp','🇯🇵 Japonais · '+cnt('jp')]].map(([v,l])=>`<button data-lang="${v}" class="${langF===v?'selected':''}">${l}</button>`).join('')}
 
@@ -63,7 +64,7 @@ function show(id){pages.forEach(p=>$(p).hidden=p!==id);activePage=id;
  $('navProfile').classList.toggle('nav-active',id==='statsPage');
  window.scrollTo(0,0)}
 function tile(k){const s=sets[k],t=totalN(k),n=ownedN(k),p=t?Math.round(n/t*100):0;
- return `<button class="set-card tone-${toneOf(k)}${t&&n>=t?' is-complete':''}" data-set="${k}"><span class="set-stage">${imgTag(meta[k]?.logo,'set-logo',s.title,codeOf(k))||`<span class="set-codebig">${esc(codeOf(k))}</span>`}</span><span class="set-foot"><span class="set-text"><b>${esc(s.title)}</b><small>${s.flag} ${t?n+' / '+t:'Bientôt'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}
+ return `<button class="set-card tone-${toneOf(k)}${t&&n>=t?' is-complete':''}" data-set="${k}"><span class="set-stage">${imgTag(meta[k]?.logo,'set-logo',s.title,codeOf(k),'set-codebig',meta[k]?.cover)||`<span class="set-codebig">${esc(codeOf(k))}</span>`}</span><span class="set-foot"><span class="set-text"><b>${esc(s.title)}</b><small>${s.flag} ${t?n+' / '+t:'Bientôt'}</small></span>${t?`<span class="ring" style="--p:${p}"><i>${p}</i></span>`:''}</span></button>`}
 function renderHome(){const ks=started();$('myCollections').innerHTML=ks.map(tile).join('');$('noCollections').hidden=ks.length>0;
  const total=Object.values(meta).reduce((n,x)=>n+(Number(x.count)||0),0)||Object.values(CAT).reduce((n,x)=>n+(Array.isArray(x)?x.length:0),0);
  $('pokedexOwnedCount').textContent=db.singles.length.toLocaleString('fr-FR');
@@ -89,9 +90,7 @@ async function openSet(k){setReturnPage=activePage==='collectionShelf'?'collecti
  $('rarityFilter').innerHTML='<option value="">Toutes les raretés</option>'+r.map(x=>`<option>${esc(x)}</option>`).join('');$('rarityFilter').hidden=!r.length;render()}
 
 /* ---------- Album ---------- */
-function render(){
- const s=sets[cur],all=cardsOf(cur),q=norm($('search').value),r=$('rarityFilter').value;
- const shown=all.filter(c=>(filter==='all'||(filter==='owned')===isOwned(c))&&(!r||c.rarity===r)&&norm([c.name,c.number,c.rarity,c.category].join(' ')).includes(q));
+function renderHead(){const s=sets[cur],all=cardsOf(cur);
  let v=0,rem=0,vj=0,rj=0;for(const c of all){const p=price(c),x=priceOf(c.key);if(isOwned(c)){v+=x;vj+=p.jp||0}else{rem+=x;rj+=p.jp||0}}
  const n=all.filter(isOwned).length,pc=all.length?Math.round(n/all.length*100):0;
  $('setLabel').textContent=s.label;$('setTitle').textContent=s.title;$('setSubtitle').textContent=s.code;
@@ -99,8 +98,15 @@ function render(){
  $('value').textContent=v?eur(v):'—';$('remain').textContent=rem?eur(rem):'—';
  $('valueJP').textContent=vj?jpy(vj)+(fxRate?' · ≈ '+jpyEUR(vj):''):'—';$('remainJP').textContent=rj?jpy(rj)+(fxRate?' · ≈ '+jpyEUR(rj):''):'—';
  $('valueJPWrap').hidden=$('remainJPWrap').hidden=s.lang!=='jp';
+}
+function render(){
+ const s=sets[cur],all=cardsOf(cur),q=norm($('search').value),r=$('rarityFilter').value;
+ let shown=all.filter(c=>(filter==='all'||(filter==='owned'&&isOwned(c))||(filter==='missing'&&!isOwned(c))||(filter==='deal'&&deal(c)))&&(!r||c.rarity===r)&&norm([c.name,c.number,c.rarity,c.category].join(' ')).includes(q));
+ const so=$('sortSel')?.value||'num';
+ if(so!=='num'){const up=so==='priceAsc',pr=c=>priceOf(c.key)||(up?1e9:-1);shown=[...shown].sort((a,b)=>up?pr(a)-pr(b):pr(b)-pr(a))}
+ renderHead();
  $('cards').classList.add('album-grid');
- $('cards').innerHTML=shown.map(c=>`<button class="album-card ${isOwned(c)?'is-owned':'is-missing'}" data-detail="${esc(c.key)}"><span class="album-art">${c.image?`<img loading="lazy" decoding="async" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<span class="album-no-image">✦</span>'}</span><span class="album-number">#${esc(c.number)}</span><span class="album-name">${esc(c.name)}</span>${deal(c)?'<span class="deal" title="Sous ton prix cible">🎯</span>':''}</button>`).join('');
+ $('cards').innerHTML=shown.map(c=>`<button class="album-card ${isOwned(c)?'is-owned':'is-missing'}" data-card="${esc(c.key)}"><span class="info-dot" data-detail="${esc(c.key)}" aria-label="Fiche">ⓘ</span><span class="album-art">${c.image?`<img loading="lazy" decoding="async" src="${esc(c.image)}" alt="${esc(c.name)}">`:'<span class="album-no-image">✦</span>'}</span><span class="album-number">#${esc(c.number)}</span><span class="album-name">${esc(c.name)}</span>${deal(c)?'<span class="deal" title="Sous ton prix cible">🎯</span>':''}</button>`).join('');
  $('cards').hidden=!shown.length;$('empty').hidden=all.length>0;
  if(all.length&&!shown.length){$('cards').hidden=false;$('cards').innerHTML='<p class="meta">Aucun résultat.</p>'}}
 function detail(key){
@@ -211,8 +217,9 @@ async function fillPrice(key,force){
  if(!$('priceBody'))return;const e=await fetchPrice(key,force),el=$('priceBody');if(!el)return;
  if(!e){el.innerHTML='Prix indisponible (connexion ou service). <button class="btn" data-refresh-price="'+esc(key)+'">Réessayer</button>';return}
  if(e.none){el.textContent='Aucun prix Cardmarket pour cette carte.';return}
- const h=hist[key]||[],pts=[e.avg30,e.avg7,e.avg1,e.eur].filter(v=>v>=0);
- el.innerHTML=`<div class="price-main"><strong>${eur(e.eur)}</strong><small>tendance${e.low!=null?' · prix le plus bas '+eur(e.low):''}</small></div><div class="price-chg"><span>24 h ${chg(pct(e.avg1,e.avg7))}</span><span>7 j ${chg(pct(e.eur,e.avg7))}</span><span>30 j ${chg(pct(e.eur,e.avg30))}</span></div>${spark(h.length>1?h.map(x=>x[1]):pts)}<small class="muted">${h.length>1?'Historique suivi sur cet appareil ('+h.length+' relevés)':'Courbe : moyennes 30 j, 7 j, 24 h puis tendance'} · Source : Cardmarket (via TCGdex), mis à jour le ${esc(String(e.u||e.d).slice(0,10))}</small>${e.holo?`<small>Variante holo / reverse : ${eur(e.holo)}</small>`:''}<button class="btn" data-refresh-price="${esc(key)}">Actualiser</button>`}
+ const h=hist[key]||[],pts=[e.avg30,e.avg7,e.avg1,e.eur].filter(v=>v>=0),fm=v=>v!=null?eur(v):'—',dt=String(e.u||e.d).slice(0,10).split('-').reverse().join('/');
+ const row=(l,v,c)=>`<tr><td>${l}</td><td>${fm(v)}</td><td>${c==null?'':chg(c)}</td></tr>`;
+ el.innerHTML=`<div class="price-main"><strong>${eur(e.eur)}</strong><small>Tendance des prix</small></div><table class="price-table">${row('Prix moyen 30 jours',e.avg30,pct(e.eur,e.avg30))}${row('Prix moyen 7 jours',e.avg7,pct(e.eur,e.avg7))}${row('Prix moyen 1 jour',e.avg1,null)}</table>${spark(h.length>1?h.map(x=>x[1]):pts)}<small class="muted">Source : Cardmarket via TCGdex, relevé du ${esc(dt)}. Ces chiffres suivent les libellés de Cardmarket mais peuvent différer un peu de la page (mise à jour quotidienne, filtres de langue et d'état).${h.length>1?' Historique suivi sur cet appareil : '+h.length+' relevés.':''}</small>${e.holo?`<small>Variante holo / reverse : ${eur(e.holo)}</small>`:''}<button class="btn" data-refresh-price="${esc(key)}">Actualiser</button>`}
 
 /* ---------- Compte et synchronisation (Supabase, optionnel) ---------- */
 const CFG=window.POKETRACKER_CONFIG||{},cloudOn=!!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY);
@@ -256,9 +263,21 @@ $('refreshSetPrices').onclick=async()=>{const k=cur,out=$('priceProgress');
  await Promise.all(Array.from({length:6},async()=>{while(i<keys.length){await fetchPrice(keys[i++]);out.textContent=`Prix récupérés : ${++done} / ${keys.length}`}}));
  b.disabled=false;out.textContent='Prix à jour ✓';if(cur===k)render();stats()};
 
+/* ---------- Cochage rapide : un appui coche, un appui long ouvre la fiche ---------- */
+let pressT=null,pressed=false,tapMode=(()=>{try{return localStorage.getItem('poketracker-tap')}catch{return null}})()==='detail'?'detail':'own';
+function toggleOwned(key,el){if(db.owned[key])delete db.owned[key];else db.owned[key]=1;save();navigator.vibrate?.(8);
+ if(filter==='all'&&el&&el.classList){el.classList.toggle('is-owned');el.classList.toggle('is-missing');renderHead()}else{const y=window.scrollY;render();window.scrollTo(0,y)}renderHome()}
+document.addEventListener('pointerdown',e=>{const t=e.target.closest('[data-card]');if(!t||e.target.closest('[data-detail]'))return;pressed=false;clearTimeout(pressT);pressT=setTimeout(()=>{pressed=true;detail(t.dataset.card)},450)});
+['pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev,()=>clearTimeout(pressT)));
+document.addEventListener('contextmenu',e=>{if(e.target.closest('[data-card]'))e.preventDefault()});
+function applyTap(){document.querySelectorAll('[data-tap]').forEach(b=>b.classList.toggle('selected',b.dataset.tap===tapMode))}
+document.querySelectorAll('[data-tap]').forEach(b=>b.onclick=()=>{tapMode=b.dataset.tap;try{localStorage.setItem('poketracker-tap',tapMode)}catch{}applyTap()});
+applyTap();$('sortSel').onchange=render;
+
 /* ---------- Événements ---------- */
 document.addEventListener('click',e=>{
- const t=e.target.closest('[data-block],[data-set],[data-detail],[data-single-detail],[data-add],[data-rm],[data-home],[data-lang],[data-refresh-price]');if(!t)return;const d=t.dataset;
+ const t=e.target.closest('[data-block],[data-set],[data-detail],[data-single-detail],[data-add],[data-rm],[data-home],[data-lang],[data-refresh-price],[data-card]');if(!t)return;const d=t.dataset;
+ if(d.card){if(pressed){pressed=false;return}tapMode==='detail'?detail(d.card):toggleOwned(d.card,t);return}
  if(d.refreshPrice){const b=$('priceBody');if(b)b.textContent='Chargement…';fillPrice(d.refreshPrice,true);return}
  if(d.rm){e.preventDefault();e.stopPropagation();db.singles=db.singles.filter(z=>z.id!==d.rm);save();renderSingles();stats();return;}
  if(d.block)openBlock(d.block);else if(d.set)openSet(d.set);else if(d.detail)detail(d.detail);else if(d.singleDetail)singleDetail(d.singleDetail);else if(d.add){e.preventDefault();e.stopPropagation();addSingle(d.add,t);}
@@ -285,7 +304,7 @@ const jpyEUR=n=>fxRate?eur((Number(n)||0)*fxRate):'Conversion indisponible';
 async function refreshFx(){try{const r=await fetch('https://api.frankfurter.app/latest?from=JPY&to=EUR');if(!r.ok)throw 0;const x=await r.json(),v=Number(x.rates?.EUR);if(!(v>0))throw 0;fxRate=v;try{localStorage.setItem('poketracker-jpy-eur',String(v));localStorage.setItem('poketracker-jpy-eur-date',x.date||'')}catch{}stats();if(!$('collection').hidden&&sets[cur]?.lang==='jp')render()}catch{}}
 (async()=>{try{const r=await fetch('catalog/index.json');if(!r.ok)return;const x=await r.json();
  for(const s of x.series||[])if(s.logo)SL[s.id]=s.logo;
- for(const e of x.sets||[]){meta[e.key]={serie:e.serie,count:e.count,id:e.id,lang:e.lang,logo:e.logo||`https://assets.tcgdex.net/${e.lang}/${e.serie}/${e.id}/logo`};if(e.lang==='ja'&&JPN[e.id]&&sets[e.key])sets[e.key].title=JPN[e.id];if(sets[e.key])continue;
+ for(const e of x.sets||[]){meta[e.key]={serie:e.serie,count:e.count,id:e.id,lang:e.lang,cover:e.cover||'',logo:e.logo||`https://assets.tcgdex.net/${e.lang}/${e.serie}/${e.id}/logo`};if(e.lang==='ja'&&JPN[e.id]&&sets[e.key])sets[e.key].title=JPN[e.id];if(sets[e.key])continue;
   const fr=e.lang!=='ja';sets[e.key]={title:(e.lang==='ja'&&JPN[e.id])||e.name,label:'BLOC · '+String(e.serie).toUpperCase()+(fr?' · FRANÇAIS':' · JAPONAIS'),code:e.id+(fr?' · édition française':' · édition japonaise'),flag:fr?'🇫🇷':'🇯🇵',lang:fr?'fr':'jp'}}
  const byId={};for(const e of x.sets||[])byId[e.lang+':'+e.id]=e;
  for(const e of x.sets||[]){const m=e.id.match(/^(.+?)(tg|gg|cc|sv)$/i),pid=e.id==='sma'?'sm11.5':m&&m[1],p=pid&&byId[e.lang+':'+pid];if(p&&p.key!==e.key){(kids[p.key]=kids[p.key]||[]).push(e.key);kidOf[e.key]=p.key}}
